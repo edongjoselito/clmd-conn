@@ -21,9 +21,9 @@ $field = function ($name, $label, $type = 'text') use ($detail, $print_mode) {
         <?php if ($print_mode): ?><button type="button" onclick="window.print()">Print / Save as PDF</button><a href="<?= base_url('Pages/monitoring_assessment/' . (int) $record->id); ?>">Edit assessment</a>
         <?php elseif ($record): ?><a target="_blank" rel="noopener" href="<?= base_url('Pages/monitoring_assessment_print/' . (int) $record->id); ?>">Print saved form</a><?php endif; ?>
     </div>
-    <?php if ($print_mode): ?><h1>UNIFIED LEARNING AREA MONITORING TOOL</h1><?php else: ?>
+    <?php if ($print_mode): ?><h1><?= html_escape(isset($assessment['tool_name']) ? $assessment['tool_name'] : 'UNIFIED LEARNING AREA MONITORING TOOL'); ?></h1><?php else: ?>
     <?php $overall = Monitoring_summary::calculate($assessment['items']); ?>
-    <header class="ma-hero"><div><span class="ma-eyebrow">MONITORING / <?= $record ? 'ASSESSMENT #' . (int) $record->id : 'NEW ASSESSMENT'; ?></span><h1>Learning Area Assessment</h1><p><?= html_escape($assessment['school_name']); ?></p><div class="ma-hero-tags"><span>SY <?= html_escape($assessment['sy']); ?></span><span><?= html_escape($assessment['district_name']); ?></span></div></div><a href="#assessment-summary" class="ma-hero-link">View summary &darr;</a></header>
+    <header class="ma-hero"><div><span class="ma-eyebrow">MONITORING / <?= $record ? 'ASSESSMENT #' . (int) $record->id : 'NEW ASSESSMENT'; ?></span><h1><?= html_escape(isset($assessment['tool_name']) ? $assessment['tool_name'] : 'Learning Area Assessment'); ?></h1><p><?= html_escape($assessment['school_name']); ?></p><div class="ma-hero-tags"><span>SY <?= html_escape($assessment['sy']); ?></span><span><?= html_escape($assessment['district_name']); ?></span></div></div><a href="#assessment-summary" class="ma-hero-link">View summary &darr;</a></header>
     <div class="ma-overview"><div><span>Assessment progress</span><strong id="ma-live-progress"><?= $overall['answered']; ?> / <?= $overall['total']; ?></strong><small>indicators assessed</small></div><div><span>Overall rating</span><strong id="ma-live-score"><?= $overall['score']; ?></strong><small id="ma-live-description"><?= html_escape($overall['description']); ?></small></div><div class="ma-jump"><label for="ma-jump">Jump to a section</label><select id="ma-jump" class="form-control"><option value="assessment-details">School details</option><?php foreach ($assessment['groups'] as $area => $group): if (!$by_area[$area]) continue; ?><option value="assessment-area-<?= $area; ?>"><?= html_escape($group['name']); ?></option><?php endforeach; ?><option value="assessment-summary">Summary</option><option value="assessment-remarks">Remarks &amp; recommendations</option><option value="assessment-signatures">Signatures</option></select></div></div>
     <?php endif; ?>
     <?php if (!$print_mode): ?>
@@ -32,6 +32,7 @@ $field = function ($name, $label, $type = 'text') use ($detail, $print_mode) {
         <p>Save your progress at any time. Unanswered indicators remain incomplete. Print uses the last saved assessment.</p>
         <?= form_open('Pages/monitoring_assessment_save', array('id' => 'assessment-form')); ?>
         <input type="hidden" name="id" value="<?= $record ? (int) $record->id : 0; ?>">
+        <input type="hidden" name="tool_id" value="<?= isset($assessment['tool_id']) ? (int) $assessment['tool_id'] : 0; ?>">
         <input type="hidden" name="version" value="<?= $record ? (int) $record->version : 0; ?>">
         <?php foreach (array('sy', 'school_id', 'division_id', 'district_id') as $key): ?><input type="hidden" name="<?= $key; ?>" value="<?= html_escape((string) $assessment[$key]); ?>"><?php endforeach; ?>
     <?php endif; ?>

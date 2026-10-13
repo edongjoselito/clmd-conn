@@ -1374,7 +1374,7 @@ class Pages extends CI_Controller
     private function monitoring_settings_region()
     {
         if ($this->session->position !== 'region' || (int) $this->session->region < 1) {
-            show_error('Only regional users can manage monitoring indicators.', 403);
+            show_error('Only regional users can manage monitoring tools and indicators.', 403);
         }
         $this->load->model('Monitoring_model');
         $region_id = (int) $this->session->region;
@@ -1385,8 +1385,26 @@ class Pages extends CI_Controller
     public function monitoring_tool()
     {
         $region_id = $this->monitoring_settings_region();
-        $data = array('groups' => $this->Monitoring_model->defaults(),
-            'indicators' => array_filter($this->Monitoring_model->indicators($region_id), function ($indicator) {
+        $tools = $this->Monitoring_model->tools($region_id);
+        $requested_tool = $this->input->get('tool_id');
+        if ($requested_tool === null || $requested_tool === '') {
+            $edit_id = (int) $this->input->get('edit');
+            $edit = $edit_id ? $this->Monitoring_model->tool($region_id, $edit_id) : null;
+            if ($edit_id && !$edit) { show_404(); return; }
+            $this->load->view('templates/header');
+            $this->load->view('templates/menu');
+            $this->load->view('pages/monitoring_tool_list', array('tools' => $tools, 'edit' => $edit));
+            $this->load->view('templates/footer');
+            $this->load->view('templates/footer_basic');
+            return;
+        }
+        if (!is_scalar($requested_tool) || !ctype_digit((string) $requested_tool) || (int) $requested_tool < 1) {
+            show_404(); return;
+        }
+        $tool = $requested_tool ? $this->Monitoring_model->tool($region_id, (int) $requested_tool) : null;
+        if ($requested_tool && !$tool) { show_404(); return; }
+        $data = array('tools' => $tools, 'tool' => $tool, 'groups' => $this->Monitoring_model->defaults(),
+            'indicators' => array_filter($tool ? $this->Monitoring_model->indicators($region_id, $tool->id) : array(), function ($indicator) {
                 return (int) $indicator->active === 1;
             }));
         $data['school_years'] = array();
@@ -1460,7 +1478,7 @@ class Pages extends CI_Controller
             return;
         }
         $payload = $this->monitoring_new_assessment($region, $this->input->get());
-        if (!$payload) { show_error('Select a valid school year, division, district, and school from Monitoring Tool.', 422); return; }
+        if (!$payload) { show_error('Select a valid monitoring tool, school year, division, district, and school.', 422); return; }
         $this->monitoring_assessment_render($payload);
     }
 
@@ -1472,18 +1490,21 @@ class Pages extends CI_Controller
         foreach (array('school_id', 'division_id', 'district_id') as $key) {
             if (!isset($input[$key]) || !is_scalar($input[$key])) { return false; }
         }
+        if (!isset($input['tool_id']) || !is_scalar($input['tool_id'])) { return false; }
+        $tool = $this->Monitoring_model->tool($region, (int) $input['tool_id']);
+        if (!$tool) { return false; }
         $school = $this->db->select('s.schoolID, s.schoolName, d.description AS division_name, dist.description AS district_name')
             ->from('schools s')->join('division d', 'd.id = s.division_id')
             ->join('district dist', 'dist.id = s.district_id AND dist.division_id = d.id')
             ->where('d.region_id', $region)->where('d.id', $input['division_id'])
             ->where('dist.id', $input['district_id'])->where('s.schoolID', $input['school_id'])->get()->row();
         if (!$school) { return false; }
-        $payload = array('sy' => $input['sy'], 'school_id' => (string) $school->schoolID,
+        $payload = array('tool_id' => (int) $tool->id, 'tool_name' => $tool->name, 'sy' => $input['sy'], 'school_id' => (string) $school->schoolID,
             'school_name' => $school->schoolName, 'division_id' => (int) $input['division_id'],
             'district_id' => (int) $input['district_id'], 'division_name' => $school->division_name,
             'district_name' => $school->district_name, 'groups' => $this->Monitoring_model->defaults(), 'items' => array(),
             'details' => array(), 'comments' => array());
-        foreach ($this->Monitoring_model->indicators($region) as $item) {
+        foreach ($this->Monitoring_model->indicators($region, $tool->id) as $item) {
             if ((int) $item->active !== 1) { continue; }
             $payload['items'][] = array('id' => (int) $item->id, 'area' => (int) $item->area_index,
                 'subgroup' => $item->subgroup, 'text' => $item->indicator, 'rating' => '', 'remarks' => '');
@@ -1565,11 +1586,67 @@ class Pages extends CI_Controller
         redirect('monitoring/tool');
     }
 
+    public function monitoring_tools()
+    {
+        $region = $this->monitoring_settings_region();
+        $data = array('tools' => $this->Monitoring_model->tools($region), 'edit' => null);
+        $id = (int) $this->input->get('edit');
+        if ($id) {
+            $data['edit'] = $this->Monitoring_model->tool($region, $id);
+            if (!$data['edit']) { show_404(); return; }
+        }
+        $this->load->view('templates/header');
+        $this->load->view('templates/menu');
+        $this->load->view('pages/monitoring_tools', $data);
+        $this->load->view('templates/footer');
+        $this->load->view('templates/footer_basic');
+    }
+
+    public function monitoring_tool_save()
+    {
+        $this->require_post();
+        $region = $this->monitoring_settings_region();
+        $this->form_validation->set_rules('id', 'Tool ID', 'required|integer|greater_than_equal_to[0]');
+        $this->form_validation->set_rules('name', 'Tool name', 'trim|required|max_length[255]');
+        if (!$this->form_validation->run()) {
+            $this->session->set_flashdata('danger', validation_errors('', ' '));
+            $this->session->set_flashdata('monitoring_tool_input', $this->input->post(NULL, false));
+        } else {
+            $ok = $this->Monitoring_model->save_tool($region, (int) $this->input->post('id'), trim((string) $this->input->post('name')));
+            $this->session->set_flashdata($ok ? 'success' : 'danger', $ok ? 'Monitoring tool saved.' : 'Monitoring tool could not be saved.');
+        }
+        redirect($this->input->post('return_to') === 'monitoring/tool' ? 'monitoring/tool' : 'monitoring-tool/settings/tools');
+    }
+
+    public function monitoring_tool_delete()
+    {
+        $this->require_post();
+        $region = $this->monitoring_settings_region();
+        $ok = $this->Monitoring_model->delete_tool($region, (int) $this->input->post('id'));
+        $this->session->set_flashdata($ok ? 'success' : 'danger', $ok ? 'Monitoring tool removed. Saved assessments remain available.' : 'Monitoring tool could not be removed.');
+        redirect($this->input->post('return_to') === 'monitoring/tool' ? 'monitoring/tool' : 'monitoring-tool/settings/tools');
+    }
+
+    public function monitoring_indicator_delete()
+    {
+        $this->require_post();
+        $region = $this->monitoring_settings_region();
+        $tool_id = (int) $this->input->post('tool_id');
+        if (!$this->Monitoring_model->tool($region, $tool_id)) { show_404(); return; }
+        $ok = $this->Monitoring_model->delete_indicator($region, $tool_id, (int) $this->input->post('id'));
+        $this->session->set_flashdata($ok ? 'success' : 'danger', $ok ? 'Indicator deleted.' : 'Indicator could not be deleted.');
+        redirect('monitoring-tool/settings/indicators?tool_id=' . $tool_id);
+    }
+
     public function monitoring_indicators()
     {
         $region_id = $this->monitoring_settings_region();
-        $data = array('groups' => $this->Monitoring_model->defaults(),
-            'indicators' => $this->Monitoring_model->indicators($region_id));
+        $tool_id = (int) $this->input->get('tool_id');
+        if (!$tool_id) { redirect('monitoring-tool/settings/tools'); return; }
+        $tool = $this->Monitoring_model->tool($region_id, $tool_id);
+        if (!$tool) { show_404(); return; }
+        $data = array('tool' => $tool, 'groups' => $this->Monitoring_model->defaults(),
+            'indicators' => $this->Monitoring_model->indicators($region_id, $tool_id));
         $this->load->view('templates/header');
         $this->load->view('templates/menu');
         $this->load->view('pages/monitoring_indicators', $data);
@@ -1581,6 +1658,8 @@ class Pages extends CI_Controller
     {
         $this->require_post();
         $region_id = $this->monitoring_settings_region();
+        $tool_id = (int) $this->input->post('tool_id');
+        if (!$this->Monitoring_model->tool($region_id, $tool_id)) { show_404(); return; }
         $this->form_validation->set_rules('id', 'Indicator ID', 'required|integer|greater_than_equal_to[0]');
         $this->form_validation->set_rules('area_index', 'Area', 'required|integer|greater_than_equal_to[0]|less_than_equal_to[7]');
         $this->form_validation->set_rules('indicator', 'Indicator', 'trim|required|max_length[5000]');
@@ -1591,7 +1670,7 @@ class Pages extends CI_Controller
             $this->session->set_flashdata('danger', validation_errors('', ' '));
             $this->session->set_flashdata('monitoring_input', $this->input->post(NULL, false));
         } else {
-            $saved = $this->Monitoring_model->save($region_id, (int) $this->input->post('id'), array(
+            $saved = $this->Monitoring_model->save($region_id, $tool_id, (int) $this->input->post('id'), array(
                 'area_index' => (int) $this->input->post('area_index'),
                 'indicator' => trim((string) $this->input->post('indicator')),
                 'subgroup' => trim((string) $this->input->post('subgroup')),
@@ -1600,7 +1679,7 @@ class Pages extends CI_Controller
             ));
             $this->session->set_flashdata($saved ? 'success' : 'danger', $saved ? 'Indicator saved.' : 'Indicator could not be saved.');
         }
-        redirect('monitoring-tool/settings/indicators');
+        redirect('monitoring-tool/settings/indicators?tool_id=' . $tool_id);
     }
 
     public function learning_area_setup()

@@ -83,3 +83,5 @@ $route['translate_uri_dashes'] = FALSE;
 
 $route['monitoring-tool/settings/indicators'] = 'pages/monitoring_indicators';
 $route['monitoring/tool'] = 'pages/monitoring_tool';
+
+$route['monitoring-tool/settings/tools'] = 'pages/monitoring_tools';

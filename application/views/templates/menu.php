@@ -303,11 +303,11 @@
                             <li>
                                 <a href="javascript: void(0);" class="waves-effect"><i class="mdi mdi-clipboard-check-outline"></i><span> Monitoring</span><span class="menu-arrow"></span></a>
                                 <ul class="nav-second-level" aria-expanded="false">
-                                    <li><a href="<?= base_url('monitoring/tool'); ?>">Tool</a></li>
+                                    <li><a href="<?= base_url('monitoring/tool'); ?>">Tools</a></li>
                                     <li>
                                         <a href="javascript: void(0);">Settings <span class="menu-arrow"></span></a>
                                         <ul class="nav-third-level" aria-expanded="false">
-                                            <li><a href="<?= base_url('monitoring-tool/settings/indicators'); ?>">Indicators</a></li>
+                                            <li><a href="<?= base_url('monitoring-tool/settings/tools'); ?>">Monitoring Tools</a></li>
                                         </ul>
                                     </li>
                                 </ul>

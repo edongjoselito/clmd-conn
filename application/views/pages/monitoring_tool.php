@@ -2,6 +2,7 @@
 $filtered_records = array(); $completed = 0;
 foreach ($records as $saved) {
     $payload = json_decode($saved->payload, true);
+    if ($tool && (isset($payload['tool_id']) ? (int) $payload['tool_id'] !== (int) $tool->id : $tool->seed_key !== 'legacy')) continue;
     if ($selected_sy && $payload['sy'] !== $selected_sy) continue;
     if ($selected_division && (int) $payload['division_id'] !== $selected_division) continue;
     if ($selected_district && (int) $payload['district_id'] !== $selected_district) continue;
@@ -18,9 +19,10 @@ $ready = $selected_sy && $selected_school && $indicators;
 <link rel="stylesheet" href="<?= base_url('assets/css/monitoring-indicators.css'); ?>?v=<?= filemtime(FCPATH . 'assets/css/monitoring-indicators.css'); ?>">
 <link rel="stylesheet" href="<?= base_url('assets/css/monitoring-tool.css'); ?>?v=<?= filemtime(FCPATH . 'assets/css/monitoring-tool.css'); ?>">
 <div class="mi-page mt-tool">
+    <p><a href="<?= base_url('monitoring/tool'); ?>">&larr; All Monitoring Tools</a></p>
     <header class="mi-header">
-        <div><small>MONITORING / TOOL</small><h1>Learning Area Monitoring</h1><p>Create school assessments, track progress, and prepare monitoring reports.</p><div class="mt-header-tags"><span><?= count($indicators); ?> active indicators</span><span><?= count($groups); ?> areas of concern</span></div></div>
-        <a href="<?= base_url('monitoring-tool/settings/indicators'); ?>" class="btn btn-light"><i class="mdi mdi-tune" aria-hidden="true"></i> Manage indicators</a>
+        <div><small>MONITORING / TOOL</small><h1><?= $tool ? html_escape($tool->name) : 'Monitoring Tools'; ?></h1><p>Create school assessments, track progress, and prepare monitoring reports.</p><div class="mt-header-tags"><span><?= count($indicators); ?> active indicators</span><span><?= count($groups); ?> areas of concern</span></div></div>
+        <a href="<?= base_url('monitoring-tool/settings/tools'); ?>" class="btn btn-light"><i class="mdi mdi-tune" aria-hidden="true"></i> Manage tools</a>
     </header>
     <div class="mt-stats" aria-label="Assessment counts for selected filters">
         <div><span class="mt-stat-icon"><i class="mdi mdi-clipboard-text-outline" aria-hidden="true"></i></span><div><strong><?= count($filtered_records); ?></strong><span>Assessments</span></div></div>
@@ -29,8 +31,9 @@ $ready = $selected_sy && $selected_school && $indicators;
     </div>
     <section class="card mt-filter-card">
         <div class="card-body">
-            <div class="mt-section-heading"><div><span class="mt-eyebrow">START AN ASSESSMENT</span><h2>Select a school</h2><p>Choose the school year and location. Your selections also filter the records below.</p></div><a href="<?= base_url('monitoring/tool'); ?>" class="mt-reset">Reset selection</a></div>
+            <div class="mt-section-heading"><div><span class="mt-eyebrow">START AN ASSESSMENT</span><h2>Select a school</h2><p>Choose the school year and location. Your selections also filter the records below.</p></div><a href="<?= base_url('monitoring/tool?tool_id=' . (int) $tool->id); ?>" class="mt-reset">Reset selection</a></div>
             <form action="<?= base_url('monitoring/tool'); ?>" method="get" id="monitoring-details">
+                <input type="hidden" name="tool_id" value="<?= (int) $tool->id; ?>">
                 <div class="form-row">
                     <div class="form-group col-md-6 col-xl-3">
                         <label for="monitoring-sy"><span class="mt-step">1</span> School year (SY)</label>
@@ -65,8 +68,8 @@ $ready = $selected_sy && $selected_school && $indicators;
             </form>
     <div class="mt-create-bar">
         <?php if ($ready): ?><p><strong>Ready to begin</strong><span>Create an assessment for the selected school and school year.</span></p>
-            <a class="btn btn-primary" href="<?= base_url('Pages/monitoring_assessment') . '?' . html_escape(http_build_query(array('sy' => $selected_sy, 'division_id' => $selected_division, 'district_id' => $selected_district, 'school_id' => $selected_school))); ?>"><i class="mdi mdi-plus" aria-hidden="true"></i> Create assessment</a>
-        <?php else: ?><p><strong><?= !$indicators ? 'No active indicators' : 'Choose your assessment details'; ?></strong><span><?= !$indicators ? 'Add or activate indicators in Settings to begin.' : 'Select all four fields above to create an assessment.'; ?></span></p><button class="btn btn-primary" disabled>Create assessment</button><?php endif; ?>
+            <a class="btn btn-primary" href="<?= base_url('Pages/monitoring_assessment') . '?' . html_escape(http_build_query(array('tool_id' => (int) $tool->id, 'sy' => $selected_sy, 'division_id' => $selected_division, 'district_id' => $selected_district, 'school_id' => $selected_school))); ?>"><i class="mdi mdi-plus" aria-hidden="true"></i> Create assessment</a>
+        <?php else: ?><p><strong><?= !$tool ? 'Select a monitoring tool' : (!$indicators ? 'No active indicators' : 'Choose your assessment details'); ?></strong><span><?= !$tool ? 'Choose a tool to use its associated indicators.' : (!$indicators ? 'Add or activate indicators in Settings to begin.' : 'Select all four fields above to create an assessment.'); ?></span></p><button class="btn btn-primary" disabled>Create assessment</button><?php endif; ?>
     </div>
         </div>
     </section>
@@ -76,11 +79,11 @@ $ready = $selected_sy && $selected_school && $indicators;
     <section class="card mt-records"><div class="card-body">
         <div class="mt-section-heading"><div><h2>Saved assessments <span class="mt-count"><?= count($filtered_records); ?></span></h2><p>Continue an assessment or print your saved monitoring form.</p></div>
         <div class="mt-search" hidden><label class="sr-only" for="assessment-search">Search saved assessments</label><i class="mdi mdi-magnify" aria-hidden="true"></i><input type="search" id="assessment-search" class="form-control" placeholder="Search school, division, or SY…"></div></div>
-        <div class="table-responsive"><table class="table table-hover"><thead><tr><th>SY</th><th>School</th><th>Division / District</th><th>Progress</th><th>Updated</th><th>Actions</th></tr></thead><tbody>
+        <div class="table-responsive"><table class="table table-hover"><thead><tr><th>SY</th><th>Tool / School</th><th>Division / District</th><th>Progress</th><th>Updated</th><th>Actions</th></tr></thead><tbody>
         <?php foreach ($filtered_records as $entry):
             $saved = $entry['record']; $payload = $entry['payload']; $answered = $entry['answered']; $total = $entry['total'];
         ?>
-            <tr data-assessment-row><td><span class="mt-year"><?= html_escape($saved->sy); ?></span></td><td><strong class="mt-school-name"><?= html_escape($payload['school_name']); ?></strong><br><small><?= html_escape($saved->school_id); ?></small></td>
+            <tr data-assessment-row><td><span class="mt-year"><?= html_escape($saved->sy); ?></span></td><td><small><?= html_escape(isset($payload['tool_name']) ? $payload['tool_name'] : 'Unified Learning Area Monitoring Tool'); ?></small><br><strong class="mt-school-name"><?= html_escape($payload['school_name']); ?></strong><br><small><?= html_escape($saved->school_id); ?></small></td>
                 <td><?= html_escape($payload['division_name']); ?><br><small><?= html_escape($payload['district_name']); ?></small></td>
                 <td><span class="mt-status <?= $entry['complete'] ? 'is-complete' : ''; ?>"><?= $entry['complete'] ? 'Fully assessed' : 'In progress'; ?></span><div class="mt-progress" aria-hidden="true"><span style="width:<?= $total ? (int) round(100 * $answered / $total) : 0; ?>%"></span></div><small><?= $answered; ?> of <?= $total; ?> indicators</small></td><td><span class="mt-date"><?= html_escape(date('M j, Y', strtotime($saved->updated_at))); ?></span><small><?= html_escape(date('g:i A', strtotime($saved->updated_at))); ?></small></td>
                 <td><div class="mt-actions">
