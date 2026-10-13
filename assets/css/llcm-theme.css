@@ -1,0 +1,195 @@
+/* DM Sans is the interface typeface. It is declared here, in the theme the
+   three app headers load, so the printable and PDF views — which load neither
+   this file nor app.min.css — keep the typography they were built around.
+   One variable file per style covers every weight the UI uses. */
+@font-face {
+    font-family: "DM Sans";
+    src: url("../fonts/DM_Sans/DMSans-VariableFont_opsz%2Cwght.ttf") format("truetype-variations"),
+         url("../fonts/DM_Sans/DMSans-VariableFont_opsz%2Cwght.ttf") format("truetype");
+    font-weight: 100 1000;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "DM Sans";
+    src: url("../fonts/DM_Sans/DMSans-Italic-VariableFont_opsz%2Cwght.ttf") format("truetype-variations"),
+         url("../fonts/DM_Sans/DMSans-Italic-VariableFont_opsz%2Cwght.ttf") format("truetype");
+    font-weight: 100 1000;
+    font-style: italic;
+    font-display: swap;
+}
+
+:root {
+    --llcm-navy: #3b0718;
+    --llcm-blue: #922c43;
+    --llcm-sky: #fbf4f5;
+    --llcm-border: #ead7dc;
+    --llcm-ink: #233342;
+    --llcm-font: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+    color: var(--llcm-ink);
+    background: #fbf9fa;
+    font-family: var(--llcm-font);
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+}
+/* Bootstrap and the admin template pin "Lato" on these individually, so the
+   body rule alone does not reach them. */
+h1, h2, h3, h4, h5, h6,
+.btn, .form-control, .custom-select, .custom-file-label,
+.input-group-text, .nav, .dropdown-menu, .modal-title,
+.table, .badge, .alert, .card, .page-title, label, legend {
+    font-family: var(--llcm-font);
+}
+.navbar-custom { background: #fff; box-shadow: 0 1px 0 var(--llcm-border); }
+.logo-box, .left-side-menu-dark .logo-box { background-color: var(--llcm-navy); }
+.logo-box .clmd-wordmark {
+    color: var(--llcm-navy);
+    font-family: var(--llcm-font);
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    vertical-align: middle;
+}
+.logo-box .logo-light .clmd-wordmark { color: #fff; }
+.logo-box .logo-sm .clmd-wordmark { font-size: 17px; letter-spacing: .02em; }
+
+.navbar-custom .topbar-fiscal-year { height: 70px; padding: 14px 8px; }
+.navbar-custom .topbar-fiscal-year form {
+    display: flex;
+    align-items: center;
+    height: 42px;
+    overflow: hidden;
+    border: 1px solid var(--llcm-border);
+    border-radius: 9px;
+    background: #f7fafc;
+}
+.navbar-custom .topbar-fiscal-year label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+    margin: 0;
+    padding: 0 10px 0 12px;
+    color: #607486;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.navbar-custom .topbar-fiscal-year label i { color: var(--llcm-blue); font-size: 17px; }
+.navbar-custom .topbar-fiscal-year select {
+    height: 100%;
+    padding: 0 29px 0 10px;
+    color: var(--llcm-navy);
+    background-color: #fff;
+    border: 0;
+    border-left: 1px solid var(--llcm-border);
+    outline: 0;
+    font-family: var(--llcm-font);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.navbar-custom .topbar-fiscal-year select:focus { box-shadow: inset 0 0 0 2px rgba(146,44,67,.22); }
+.navbar-custom .global-back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 38px;
+    margin: 16px 0 16px 2px;
+    padding: 0 14px;
+    color: var(--llcm-navy);
+    background: #f7fafc;
+    border: 1px solid var(--llcm-border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.navbar-custom .global-back-button i { font-size: 19px; }
+.navbar-custom .global-back-button:hover {
+    color: #fff;
+    background: var(--llcm-blue);
+    border-color: var(--llcm-blue);
+    text-decoration: none;
+}
+.navbar-custom .global-back-button:focus {
+    color: var(--llcm-navy);
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(146,44,67,.18);
+}
+@media (max-width: 575.98px) {
+    .navbar-custom .topbar-fiscal-year { padding-left: 3px; padding-right: 3px; }
+    .navbar-custom .topbar-fiscal-year label { width: 38px; padding: 0; justify-content: center; }
+    .navbar-custom .topbar-fiscal-year label span { display: none; }
+    .navbar-custom .topbar-fiscal-year select { width: 70px; padding-left: 7px; padding-right: 20px; }
+    .navbar-custom .global-back-button {
+        width: 38px;
+        padding: 0;
+        justify-content: center;
+    }
+    .navbar-custom .global-back-button span { display: none; }
+}
+.left-side-menu { background: linear-gradient(180deg, var(--llcm-navy), #260510); }
+.left-side-menu-dark .left-side-menu { background: linear-gradient(180deg, var(--llcm-navy), #260510); }
+#sidebar-menu > ul > li > a, #sidebar-menu .menu-title, #sidebar-menu .nav-second-level li a { color: rgba(255,255,255,.86); }
+/* The stock template sets 15px here, which reads oversized next to the page
+   content; these bring the sidebar back in scale with the rest of the UI. */
+#sidebar-menu > ul > li > a { padding: 10px 18px; font-size: 13px; }
+#sidebar-menu > ul > li > a i { width: 18px; margin: 0 9px 0 2px; font-size: 16px; }
+#sidebar-menu > ul > li > ul { padding-left: 29px; }
+#sidebar-menu .nav-second-level li a { padding: 7px 18px; font-size: 12.5px; }
+#sidebar-menu .menu-title { padding: 9px 18px; font-size: 10px; }
+#sidebar-menu .menu-arrow { right: 18px; line-height: 1.35rem; }
+#sidebar-menu > ul > li > a:hover, #sidebar-menu > ul > li > a:focus,
+#sidebar-menu .nav-second-level li a:hover, #sidebar-menu .nav-second-level li a:focus {
+    color: #fff;
+    background: rgba(255,255,255,.10);
+}
+.left-side-menu-dark .left-side-menu #sidebar-menu > ul > li > a:hover,
+.left-side-menu-dark .left-side-menu #sidebar-menu > ul > li > a:focus,
+.left-side-menu-dark .left-side-menu #sidebar-menu > ul > li > a:active {
+    color: #fff;
+    background-color: rgba(255,255,255,.10);
+}
+.left-side-menu-dark .left-side-menu #sidebar-menu > ul > li > a.active,
+.left-side-menu-dark .left-side-menu #sidebar-menu > ul > li.mm-active > a {
+    color: #fff;
+    background-color: #64142d;
+    box-shadow: inset 3px 0 #d6a84b;
+}
+.left-side-menu-dark .left-side-menu .nav-second-level li a,
+.left-side-menu-dark .left-side-menu .nav-third-level li a {
+    color: rgba(255,255,255,.76);
+}
+.left-side-menu-dark .left-side-menu .nav-second-level li a:focus,
+.left-side-menu-dark .left-side-menu .nav-second-level li a:hover,
+.left-side-menu-dark .left-side-menu .nav-third-level li a:focus,
+.left-side-menu-dark .left-side-menu .nav-third-level li a:hover {
+    color: #fff;
+    background-color: rgba(255,255,255,.08);
+}
+.left-side-menu-dark .left-side-menu .nav-second-level li > a.active,
+.left-side-menu-dark .left-side-menu .nav-third-level li > a.active,
+.left-side-menu-dark .left-side-menu .nav-second-level li.mm-active > a,
+.left-side-menu-dark .left-side-menu .nav-third-level li.mm-active > a {
+    color: #ffd2a1;
+}
+#sidebar-menu .menu-title { color: #d7aebb; }
+#sidebar-menu > ul > li > a i { color: #f0b9c5; }
+.left-side-menu-dark .left-side-menu #sidebar-menu > ul > li > a.active i,
+.left-side-menu-dark .left-side-menu #sidebar-menu > ul > li.mm-active > a i { color: #f0c77a; }
+.btn-primary, .btn-primary:not(:disabled):not(.disabled):active, .btn-primary:focus { border-color: var(--llcm-blue); background-color: var(--llcm-blue); box-shadow: none; }
+.btn-primary:hover { border-color: var(--llcm-navy); background-color: var(--llcm-navy); }
+.btn-outline-primary { color: var(--llcm-blue); border-color: var(--llcm-blue); }
+.btn-outline-primary:hover { color: #fff; border-color: var(--llcm-blue); background: var(--llcm-blue); }
+.card { border-color: var(--llcm-border); }
+.card-header { border-bottom-color: var(--llcm-border); }
+.table thead th { border-bottom-color: var(--llcm-border); color: var(--llcm-navy); }
+.form-control:focus, .custom-select:focus { border-color: var(--llcm-blue); box-shadow: 0 0 0 .15rem rgba(146,44,67,.16); }
+.page-title-box .page-title, h1, h2, h3, h4 { color: var(--llcm-navy); }
+.dropdown-item.active, .dropdown-item:active { background-color: var(--llcm-blue); }
+a:not([class]) { color: var(--llcm-blue); }

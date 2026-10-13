@@ -1,0 +1,470 @@
+/* Regional Learning Gap Overview (/region).
+   Built on the llcm theme tokens so it matches the rest of the system. */
+.rd-page {
+    --rd-navy: var(--llcm-navy, #3b0718);
+    --rd-blue: var(--llcm-blue, #922c43);
+    --rd-sky: var(--llcm-sky, #fbf4f5);
+    --rd-line: var(--llcm-border, #ead7dc);
+    --rd-ink: var(--llcm-ink, #233342);
+    --rd-muted: #78616a;
+    --rd-faint: #876b75;
+    --rd-accent: #800020;
+    --rd-accent-soft: #fbf0f3;
+    --rd-accent-line: #e4bdc7;
+    --rd-green: #1d6b3c;
+    --rd-green-soft: #edf9f1;
+    --rd-radius: 14px;
+    --rd-shadow: 0 4px 16px rgba(59, 7, 24, .05);
+    margin-bottom: 28px;
+    color: var(--rd-ink);
+}
+.rd-page :focus-visible { outline: 2px solid var(--rd-blue); outline-offset: 2px; }
+.rd-num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Page header ---------- */
+.rd-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin: 18px 0 20px;
+    padding: 24px 26px;
+    border-radius: var(--rd-radius);
+    color: #fff;
+    background: linear-gradient(118deg, var(--rd-navy), var(--rd-blue));
+}
+.rd-eyebrow {
+    display: block;
+    margin-bottom: 6px;
+    color: rgba(255, 255, 255, .78);
+    font-size: .74rem;
+    font-weight: 600;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+}
+.rd-header h1 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.6rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+.rd-header-meta {
+    margin: 8px 0 0;
+    color: rgba(255, 255, 255, .88);
+    font-size: .95rem;
+}
+.rd-header-meta span + span::before {
+    content: "·";
+    margin: 0 .5rem;
+    color: rgba(255, 255, 255, .55);
+}
+.rd-header-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.rd-header-actions .btn { font-size: .88rem; font-weight: 600; }
+.rd-header-actions .btn-light { color: var(--rd-navy); }
+.rd-header-actions .btn-outline-light { border-color: rgba(255, 255, 255, .55); }
+
+/* ---------- Metric tiles ---------- */
+.rd-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.rd-metric {
+    display: block;
+    padding: 18px 20px;
+    border: 1px solid var(--rd-line);
+    border-radius: var(--rd-radius);
+    background: #fff;
+    box-shadow: var(--rd-shadow);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+a.rd-metric:hover, a.rd-metric:focus {
+    border-color: #d8b2bc;
+    box-shadow: 0 8px 22px rgba(59, 7, 24, .09);
+    color: inherit;
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+.rd-metric-top {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+}
+.rd-metric-label {
+    color: var(--rd-muted);
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.rd-metric-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--rd-sky);
+    color: var(--rd-blue);
+    font-size: 1.05rem;
+}
+.rd-metric-value {
+    display: block;
+    margin: 12px 0 0;
+    color: var(--rd-navy);
+    font-size: 1.85rem;
+    font-weight: 600;
+    line-height: 1.1;
+}
+.rd-metric-note {
+    display: block;
+    margin-top: 6px;
+    color: var(--rd-muted);
+    font-size: .82rem;
+    line-height: 1.45;
+}
+/* The gap rate is the number a regional reader is looking for, so it carries
+   the one accent colour on the row. */
+.rd-metric-focus { border-color: var(--rd-accent-line); background: var(--rd-accent-soft); }
+.rd-metric-focus .rd-metric-icon { background: #f0d8df; color: var(--rd-accent); }
+.rd-metric-focus .rd-metric-value { color: var(--rd-accent); }
+.rd-metric-focus .rd-metric-label, .rd-metric-focus .rd-metric-note { color: #794354; }
+a.rd-metric-focus:hover, a.rd-metric-focus:focus { border-color: #b66a7d; }
+.rd-meter {
+    display: block;
+    height: 6px;
+    margin-top: 12px;
+    border-radius: 999px;
+    background: rgba(128, 0, 32, .12);
+    overflow: hidden;
+}
+.rd-meter span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #a33b55, #800020);
+}
+
+/* ---------- Cards ---------- */
+/* Cards size to their own content. A Bootstrap column stretches to the row, so
+   a card set to height:100% inside a column holding two of them overflows. */
+.rd-card {
+    margin-bottom: 20px;
+    border: 1px solid var(--rd-line);
+    border-radius: var(--rd-radius);
+    background: #fff;
+    box-shadow: var(--rd-shadow);
+}
+.rd-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--rd-line);
+}
+.rd-card-head h2 {
+    margin: 0;
+    color: var(--rd-navy);
+    font-size: 1.08rem;
+    font-weight: 600;
+}
+/* The description always takes its own line under the title: a max-width here
+   would let the flex algorithm tuck a short one back up beside the heading. */
+.rd-card-head p {
+    flex: 1 0 100%;
+    margin: 0;
+    color: var(--rd-muted);
+    font-size: .87rem;
+    line-height: 1.5;
+}
+.rd-card-body { padding: 20px 22px; }
+.rd-card-body-flush { padding: 0; }
+.rd-tag {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    padding: 3px 11px;
+    border-radius: 999px;
+    background: var(--rd-sky);
+    color: var(--rd-navy);
+    font-size: .76rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.rd-tag-quiet { background: #f5eef0; color: var(--rd-muted); }
+.rd-link:hover, .rd-link:focus, .rd-table a:hover, .rd-table a:focus { color: var(--rd-navy); }
+.rd-link {
+    color: var(--rd-blue);
+    font-size: .82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* ---------- Charts ---------- */
+.rd-chart { position: relative; height: 320px; }
+.rd-chart-tall { height: 440px; }
+/* Nothing to plot: collapse the reserved canvas height rather than leaving a
+   few hundred pixels of empty card. */
+.rd-chart.is-empty, .rd-chart-tall.is-empty { height: auto; }
+.rd-chart-empty {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 36px 20px;
+    color: var(--rd-muted);
+    font-size: .9rem;
+    text-align: center;
+}
+.rd-chart-empty i { display: block; margin-bottom: 8px; color: #c66b7c; font-size: 2.2rem; }
+
+/* ---------- Coverage ---------- */
+.rd-coverage-value {
+    color: var(--rd-navy);
+    font-size: 2.1rem;
+    font-weight: 600;
+    line-height: 1;
+}
+.rd-coverage-label { margin: 8px 0 14px; color: var(--rd-muted); font-size: .88rem; line-height: 1.5; }
+.rd-bar { height: 8px; border-radius: 999px; background: #f5e9ec; overflow: hidden; }
+.rd-bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--rd-navy), var(--rd-blue));
+}
+.rd-bar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    justify-content: space-between;
+    margin-top: 12px;
+    color: var(--rd-muted);
+    font-size: .82rem;
+}
+.rd-bar-legend strong { color: var(--rd-navy); font-weight: 600; }
+
+/* ---------- Priority list ---------- */
+.rd-priority { margin: 0; padding: 0; list-style: none; }
+.rd-priority li {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 13px 0;
+    border-top: 1px solid var(--rd-line);
+}
+.rd-priority li:first-child { padding-top: 0; border-top: none; }
+.rd-priority li:last-child { padding-bottom: 0; }
+.rd-priority-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--rd-accent-soft);
+    color: var(--rd-accent);
+    font-size: .78rem;
+    font-weight: 700;
+}
+.rd-priority-name { min-width: 0; }
+.rd-priority-name a { color: var(--rd-navy); font-size: .92rem; font-weight: 600; }
+.rd-priority-name small {
+    display: block;
+    overflow: hidden;
+    color: var(--rd-muted);
+    font-size: .78rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.rd-priority-value { text-align: right; }
+.rd-priority-value strong { display: block; color: var(--rd-accent); font-size: 1.05rem; font-weight: 600; }
+.rd-priority-value small { color: var(--rd-muted); font-size: .72rem; }
+
+/* ---------- Thematic analysis ---------- */
+.rd-theme-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+.rd-theme-facts span {
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: #fbf4f5;
+    color: #5b4650;
+    font-size: .8rem;
+}
+.rd-theme-facts strong { color: var(--rd-navy); font-weight: 600; }
+.rd-insight {
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border-left: 3px solid var(--rd-blue);
+    border-radius: 0 10px 10px 0;
+    background: #fbf4f5;
+    color: #5b4650;
+    font-size: .89rem;
+    line-height: 1.6;
+}
+.rd-insight strong { color: var(--rd-navy); font-weight: 600; }
+.rd-themes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+.rd-theme {
+    padding: 16px;
+    border: 1px solid var(--rd-line);
+    border-radius: 12px;
+    background: #fff;
+}
+.rd-theme-head {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    justify-content: space-between;
+}
+.rd-theme h3 { margin: 0; color: var(--rd-navy); font-size: .93rem; font-weight: 600; line-height: 1.4; }
+.rd-theme-count { flex: 0 0 auto; color: var(--rd-blue); font-size: 1.15rem; font-weight: 600; }
+.rd-theme-bar { height: 5px; margin: 11px 0 9px; border-radius: 999px; background: #f5e9ec; overflow: hidden; }
+.rd-theme-bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--rd-blue), #c66b7c);
+}
+.rd-theme-meta { color: var(--rd-muted); font-size: .75rem; line-height: 1.5; }
+.rd-theme-quote {
+    margin: 10px 0 0;
+    color: #6c5860;
+    font-size: .8rem;
+    font-style: italic;
+    line-height: 1.55;
+}
+.rd-note { margin: 16px 0 0; color: var(--rd-faint); font-size: .76rem; line-height: 1.5; }
+
+/* ---------- Division table ---------- */
+.rd-filter {
+    position: relative;
+    flex: 0 0 auto;
+    width: 220px;
+    max-width: 100%;
+}
+.rd-filter input {
+    width: 100%;
+    height: calc(1.5em + .6rem + 2px);
+    padding: .3rem .6rem .3rem 2rem;
+    border: 1px solid var(--rd-line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--rd-ink);
+    font-size: .85rem;
+}
+.rd-filter input:focus {
+    border-color: var(--rd-blue);
+    box-shadow: 0 0 0 .15rem rgba(146, 44, 67, .14);
+    outline: none;
+}
+.rd-filter i {
+    position: absolute;
+    top: 50%;
+    left: .6rem;
+    color: var(--rd-faint);
+    font-size: .95rem;
+    transform: translateY(-50%);
+}
+.rd-table-wrap { max-height: 520px; overflow: auto; }
+.rd-table { width: 100%; min-width: 880px; margin: 0; border-collapse: separate; border-spacing: 0; }
+.rd-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--rd-line);
+    background: #fbf4f5;
+    color: var(--rd-muted);
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.rd-table th.rd-sort { cursor: pointer; user-select: none; }
+.rd-table th.rd-sort:hover { color: var(--rd-navy); }
+.rd-table th.rd-sort::after {
+    content: "\F54F";
+    margin-left: 4px;
+    opacity: .4;
+    font-family: "Material Design Icons";
+    font-size: .95rem;
+    font-weight: 400;
+    line-height: 0;
+    vertical-align: middle;
+}
+.rd-table th.rd-sort[data-dir="asc"]::after { content: "\F360"; opacity: 1; }
+.rd-table th.rd-sort[data-dir="desc"]::after { content: "\F35D"; opacity: 1; }
+.rd-table td {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--rd-line);
+    color: var(--rd-ink);
+    font-size: .88rem;
+    vertical-align: middle;
+}
+.rd-table tbody tr:last-child td { border-bottom: none; }
+.rd-table tbody tr:hover td { background: #fbf4f5; }
+.rd-table a { color: var(--rd-blue); font-weight: 600; }
+.rd-table .rd-division-name { color: var(--rd-navy); font-weight: 600; }
+.rd-table .rd-sub { display: block; color: var(--rd-muted); font-size: .76rem; font-weight: 400; }
+.rd-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--rd-green-soft);
+    color: var(--rd-green);
+    font-size: .73rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.rd-pill-muted { background: #f5eef0; color: #78656c; }
+.rd-rate { display: flex; gap: 9px; align-items: center; }
+.rd-rate-bar { flex: 1 1 auto; min-width: 44px; height: 5px; border-radius: 999px; background: #f5e9ec; overflow: hidden; }
+.rd-rate-bar span { display: block; height: 100%; border-radius: inherit; background: var(--rd-accent); }
+.rd-rate-value { flex: 0 0 auto; min-width: 46px; text-align: right; }
+.rd-empty { padding: 44px 24px; color: var(--rd-muted); text-align: center; }
+.rd-empty i { display: block; margin-bottom: 10px; color: #c66b7c; font-size: 2.4rem; }
+.rd-empty p { max-width: 44ch; margin: 0 auto; font-size: .9rem; }
+.rd-table-foot {
+    padding: 12px 22px;
+    border-top: 1px solid var(--rd-line);
+    color: var(--rd-muted);
+    font-size: .8rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1199.98px) {
+    .rd-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rd-themes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767.98px) {
+    .rd-header { padding: 20px; }
+    .rd-header h1 { font-size: 1.32rem; }
+    .rd-header-actions { width: 100%; }
+    .rd-header-actions .btn { flex: 1 1 auto; }
+    .rd-metrics { grid-template-columns: 1fr; gap: 12px; }
+    .rd-themes { grid-template-columns: 1fr; }
+    .rd-card-head { padding: 16px 18px; }
+    .rd-card-body { padding: 18px; }
+    .rd-filter { width: 100%; }
+    .rd-chart { height: 280px; }
+    .rd-chart-tall { height: 400px; }
+}

@@ -1,0 +1,56 @@
+.lg-records { --records-blue:var(--llcm-blue, #922c43); --records-line:var(--llcm-border, #ead7dc); --records-muted:#607486; color:#233342; padding-bottom:24px; }
+.lg-records-header { display:flex; justify-content:space-between; align-items:center; gap:24px; margin:18px 0 22px; padding:28px; border-radius:16px; color:#fff; background:linear-gradient(120deg,#3b0718,#922c43); }
+.lg-records .records-eyebrow { display:block; margin-bottom:8px; color:#f2c6ce; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.lg-records-header h1 { margin:0 0 8px; color:#fff; font-size:26px; font-weight:700; }
+.lg-records-header p { margin:0; color:#dceefa; }
+.lg-records .records-header-actions { display:flex; flex-wrap:wrap; gap:8px; flex-shrink:0; }
+.lg-records-card { border:1px solid var(--records-line); border-radius:14px; overflow:hidden; background:#fff; margin-bottom:22px; }
+.lg-records .records-filter-card { padding:22px; }
+.lg-records .records-section-title { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
+.lg-records h2 { margin:0; color:var(--records-blue); font-size:17px; font-weight:700; }
+.lg-records .records-section-title>span { color:var(--records-muted); font-size:12px; }
+.lg-records .record-filter { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) minmax(180px,1.3fr); gap:14px; align-items:end; }
+.lg-records .record-filter-field { min-width:0; }
+.lg-records .record-filter label { display:block; margin:0 0 7px; font-weight:600; font-size:12px; }
+.lg-records .record-filter .custom-select,.lg-records .record-filter .form-control { width:100%; border-color:#cbd9e5; }
+.lg-records .record-filter-actions { display:flex; flex-wrap:wrap; gap:8px; grid-column:1/-1; }
+.lg-records .records-active-filters { display:flex; align-items:center; flex-wrap:wrap; gap:8px; border-top:1px solid var(--records-line); margin-top:18px; padding-top:16px; font-size:12px; }
+.lg-records .records-active-filters span { padding:5px 10px; border-radius:6px; background:#fbf4f5; color:var(--records-blue); overflow-wrap:anywhere; }
+.lg-records-tools { padding:20px 22px; border-bottom:1px solid var(--records-line); background:#fbf4f5; }
+.lg-records-tools p { margin:7px 0 0; color:var(--records-muted); font-size:12px; }
+.lg-records .records-count { display:inline-block; padding:4px 9px; margin-left:6px; border-radius:6px; background:#f5e9ec; color:#5b1026; font-size:12px; vertical-align:middle; }
+.lg-records .table-responsive { overflow-x:auto; }
+.lg-records-table { min-width:850px; width:100%; font-size:13px; }
+.lg-records-table thead th { padding:14px 18px; border-top:0; border-bottom:1px solid var(--records-line); color:var(--records-muted); background:#fff; font-size:11px; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+.lg-records-table td,.lg-records-table tbody th { padding:18px; vertical-align:top; border-top:0; }
+.lg-records-table .record-identity { width:32%; min-width:230px; max-width:420px; font-weight:400; overflow-wrap:anywhere; }
+.lg-records-table strong { color:var(--records-blue); font-weight:700; }
+.lg-records-table small { display:block; color:var(--records-muted); margin-top:5px; font-size:11px; }
+.lg-records-table .record-identity strong,.lg-records-table .record-identity span { display:block; }
+.lg-records-table .record-identity span { margin-top:6px; }
+.lg-records-table .record-number { font-variant-numeric:tabular-nums; white-space:nowrap; }
+.lg-records-table .record-group { border-top:1px solid var(--records-line); }
+.lg-records-table .record-group:hover { background:#fbf4f5; }
+.lg-records .record-status { display:inline-block; padding:5px 9px; border-radius:6px; font-size:11px; font-weight:600; white-space:nowrap; }
+.lg-records .record-status.planned { background:#edf0fa; color:#4b548d; }
+.lg-records .record-status.ongoing { background:#fff3dc; color:#875e10; }
+.lg-records .record-status.completed { background:#e4f3e9; color:#277241; }
+.lg-records .record-status.monitoring { background:#f5e9ec; color:#5b1026; }
+.lg-records .record-status.unset { background:#eef1f4; color:#586775; }
+.lg-records-table .record-detail-row>td { padding:0 18px 16px; }
+.lg-records summary { width:fit-content; padding:6px 0; color:var(--records-blue); font-size:12px; font-weight:600; cursor:pointer; }
+.lg-records summary:hover { text-decoration:underline; }
+.lg-records .record-details-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; margin-top:12px; padding:22px; border:1px solid var(--records-line); border-radius:10px; background:#fbf4f5; overflow-wrap:anywhere; }
+.lg-records .record-competencies { grid-column:1/-1; }
+.lg-records .record-details-grid h3 { margin:0 0 9px; color:var(--records-blue); font-size:13px; font-weight:700; }
+.lg-records .record-details-grid p { margin:0; line-height:1.65; }
+.lg-records .least-learned-list { margin:0; padding-left:18px; }
+.lg-records .least-learned-list li+li { margin-top:6px; }
+.lg-records .record-actions { display:flex; gap:8px; margin-top:10px; }
+.lg-records .records-empty { padding:52px 22px; text-align:center; color:var(--records-muted); }
+.lg-records .records-empty>i { display:block; color:#c66b7c; font-size:36px; margin-bottom:12px; }
+.lg-records .records-empty h3 { color:var(--records-blue); font-size:19px; }
+.lg-records :is(a,button,summary,select,input,[tabindex]):focus-visible { outline:3px solid var(--records-blue); outline-offset:3px; }
+@media(max-width:1100px) { .lg-records-header { align-items:flex-start; flex-direction:column; } .lg-records .record-filter { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:575px) { .lg-records-header { padding:22px; } .lg-records-header h1 { font-size:22px; } .lg-records .records-filter-card { padding:18px; } .lg-records .record-filter { grid-template-columns:1fr; } .lg-records .records-header-actions { width:100%; } .lg-records .records-header-actions .btn { width:100%; } }
+@media print { .lg-records .record-filter,.lg-records .records-header-actions,.lg-records .record-actions { display:none; } .lg-records .table-responsive { overflow:visible; } .lg-records-table { min-width:0; } }

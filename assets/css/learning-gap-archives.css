@@ -1,0 +1,88 @@
+.archive-page {
+    --archive-navy: var(--llcm-navy, #3b0718);
+    --archive-blue: var(--llcm-blue, #922c43);
+    --archive-line: var(--llcm-border, #ead7dc);
+    --archive-muted: #6c7f90;
+    padding-bottom: 24px;
+}
+.archive-hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    overflow: hidden;
+    margin: 18px 0 22px;
+    padding: 32px 34px;
+    border-radius: 18px;
+    background: linear-gradient(125deg, #3b0718, #5b1026 62%, #922c43);
+    box-shadow: 0 14px 30px rgba(59, 7, 24, .17);
+}
+.archive-hero::after {
+    content: "";
+    position: absolute;
+    right: -76px;
+    bottom: -150px;
+    width: 270px;
+    height: 270px;
+    border: 36px solid rgba(255, 255, 255, .10);
+    border-radius: 50%;
+}
+.archive-hero-copy, .archive-hero .btn { position: relative; z-index: 1; }
+.archive-eyebrow { display: block; margin-bottom: 8px; color: #f2c6ce; font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.archive-hero h1 { margin: 0 0 7px; color: #fff; font-size: 29px; font-weight: 700; }
+.archive-hero p { max-width: 680px; margin: 0; color: #f4e6e9; font-size: 14px; }
+.archive-hero .btn { flex: 0 0 auto; border-radius: 9px; color: var(--archive-navy); font-weight: 700; }
+.archive-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
+.archive-metrics article { padding: 20px 22px; border: 1px solid var(--archive-line); border-radius: 15px; background: #fff; box-shadow: 0 7px 21px rgba(59, 7, 24, .06); }
+.archive-metrics span { display: block; color: #6c8192; font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.archive-metrics strong { display: block; margin: 8px 0 5px; color: var(--archive-navy); font-size: 29px; line-height: 1; font-variant-numeric: tabular-nums; }
+.archive-metrics small { color: var(--archive-muted); font-size: 11px; }
+.archive-metrics .archive-metric-focus { border-color: #efd49c; background: #fff9ec; }
+.archive-metrics .archive-metric-focus strong { color: #9b6818; }
+.archive-panel { overflow: hidden; border: 1px solid var(--archive-line); border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(59, 7, 24, .07); }
+.archive-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 22px 25px; border-bottom: 1px solid var(--archive-line); background: #fbfdfe; }
+.archive-panel-head h2 { margin: 0 0 4px; color: var(--archive-navy); font-size: 18px; font-weight: 700; }
+.archive-panel-head p { margin: 0; color: var(--archive-muted); font-size: 12px; }
+.archive-scope { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; color: var(--archive-navy); background: #fbf4f5; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.archive-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 24px; }
+.archive-year-card { padding: 21px; border: 1px solid var(--archive-line); border-radius: 14px; background: #fff; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.archive-year-card:hover { transform: translateY(-2px); border-color: #d8b2bc; box-shadow: 0 10px 22px rgba(59, 7, 24, .09); }
+.archive-year-card.is-current { border-color: #d8b2bc; background: linear-gradient(145deg, #fbf4f5, #fff); }
+.archive-year-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.archive-year-icon { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; color: var(--archive-blue); background: #fbf4f5; font-size: 21px; }
+.archive-status { padding: 5px 9px; border-radius: 999px; color: #5d7282; background: #edf2f5; font-size: 10px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.is-current .archive-status { color: #176f55; background: #e7f6ef; }
+.archive-year-card h3 { margin: 17px 0 15px; color: var(--archive-navy); font-size: 20px; font-weight: 700; }
+.archive-year-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid #e4edf3; border-radius: 11px; background: #f8fbfd; }
+.archive-year-stats.is-school { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.archive-year-stats div { padding: 12px; border-right: 1px solid #e4edf3; }
+.archive-year-stats div:last-child { border-right: 0; }
+.archive-year-stats strong, .archive-year-stats span { display: block; }
+.archive-year-stats strong { color: var(--archive-navy); font-size: 17px; font-variant-numeric: tabular-nums; }
+.archive-year-stats span { margin-top: 2px; color: var(--archive-muted); font-size: 10px; }
+.archive-year-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
+.archive-year-foot small { color: var(--archive-muted); }
+.archive-year-foot a { color: var(--archive-blue); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.archive-empty { padding: 62px 24px; color: var(--archive-muted); text-align: center; }
+.archive-empty i { display: block; margin-bottom: 12px; color: #c58a99; font-size: 42px; }
+.archive-empty h3 { margin: 0 0 6px; color: var(--archive-navy); font-size: 18px; }
+.archive-empty p { margin: 0; }
+@media (max-width: 991.98px) {
+    .archive-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .archive-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 575.98px) {
+    .archive-hero { align-items: flex-start; flex-direction: column; padding: 25px 22px; }
+    .archive-hero h1 { font-size: 24px; }
+    .archive-hero .btn { width: 100%; }
+    .archive-metrics { grid-template-columns: 1fr; }
+    .archive-panel-head, .archive-year-foot { align-items: flex-start; flex-direction: column; }
+    .archive-grid { padding: 16px; }
+    .archive-year-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .archive-year-stats.is-school { grid-template-columns: 1fr; }
+    .archive-year-stats div:nth-child(2) { border-right: 0; }
+    .archive-year-stats div:nth-child(-n+2) { border-bottom: 1px solid #e4edf3; }
+    .archive-year-stats.is-school div { border-right: 0; border-bottom: 1px solid #e4edf3; }
+    .archive-year-stats.is-school div:last-child { border-bottom: 0; }
+}

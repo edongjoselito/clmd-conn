@@ -1,1 +1,1 @@
-# clmd-conn
+# candor

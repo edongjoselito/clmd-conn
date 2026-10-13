@@ -1,0 +1,64 @@
+.mt-tool { --mt-ink: #3b0718; --mt-muted: #796671; }
+.mt-tool .mi-header { padding: 32px; background: radial-gradient(ellipse at top right, #a44360 0, transparent 55%), linear-gradient(115deg, #3b0718, #761d38); box-shadow: 0 8px 28px #3b071812; }
+.mt-tool .mi-header h1 { font-size: clamp(24px, 2.3vw, 34px); font-weight: 700; letter-spacing: -.6px; }
+.mt-tool .mi-header p { color: #f2dce3; max-width: 540px; line-height: 1.7; }
+.mt-header-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.mt-header-tags span { padding: 5px 12px; border: 1px solid #ffffff35; border-radius: 20px; background: #ffffff10; font-size: 12px; }
+.mt-tool .mi-header .btn { border-radius: 9px; padding: 10px 16px; font-weight: 600; }
+.mt-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-bottom: 24px; }
+.mt-stats > div { display: flex; gap: 16px; align-items: center; border: 1px solid #ead7dc; padding: 20px 24px; border-radius: 12px; background: #fff; }
+.mt-stat-icon { display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px; background: #f8ebef; color: #922c43; border-radius: 12px; font-size: 25px; }
+.mt-stat-complete { background: #edf6f0; color: #32714a; }
+.mt-stats strong { display: block; color: var(--mt-ink); font-size: 28px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.mt-stats strong + span { display: block; color: var(--mt-muted); margin-top: 4px; font-size: 13px; }
+.mt-tool .card { box-shadow: 0 3px 14px #3b071806; margin-bottom: 24px; border-radius: 14px; }
+.mt-tool .card-body { padding: 26px; }
+.mt-section-heading { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 24px; }
+.mt-section-heading h2 { font-size: 20px; font-weight: 700; margin: 0 0 6px; }
+.mt-section-heading p { color: var(--mt-muted); font-size: 13px; margin: 0; line-height: 1.6; }
+.mt-eyebrow { display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #922c43; margin-bottom: 8px; }
+.mt-reset { font-size: 13px; color: #922c43; text-decoration: underline; }
+.mt-filter-card label { font-size: 12px; font-weight: 600; color: #57404b; margin-bottom: 10px; }
+.mt-step { display: inline-grid; place-items: center; background: #f5e9ed; color: #800020; width: 21px; height: 21px; border-radius: 50%; margin-right: 5px; font-size: 10px; }
+.mt-filter-card .form-control { height: 46px; border-radius: 8px; border-color: #e4d7dd; font-size: 13px; }
+.mt-filter-card .form-control:disabled { background: #f6f3f5; color: #8b7982; }
+.mt-create-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 18px 20px; border-radius: 10px; background: #fbf5f7; margin-top: 8px; }
+.mt-create-bar p { margin: 0; }
+.mt-create-bar strong { display: block; font-size: 13px; color: var(--mt-ink); margin-bottom: 3px; }
+.mt-create-bar p span { color: var(--mt-muted); font-size: 12px; }
+.mt-create-bar .btn { border-radius: 8px; padding: 10px 18px; }
+.mt-count { display: inline-block; font-size: 12px; vertical-align: middle; background: #f5e9ed; color: #800020; padding: 3px 9px; border-radius: 20px; margin-left: 6px; }
+.mt-search { position: relative; width: 290px; max-width: 100%; }
+.mt-search i { position: absolute; left: 12px; top: 10px; font-size: 20px; color: var(--mt-muted); }
+.mt-search input { padding-left: 38px; height: 42px; border: 1px solid #e4d7dd; border-radius: 9px; font-size: 12px; }
+.mt-records .table { min-width: 960px; margin-bottom: 0; }
+.mt-records th { background: #faf5f7; border-top: 0; border-bottom: 1px solid #ead7dc; font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--mt-muted); padding: 13px 14px; }
+.mt-records td { padding: 20px 14px; vertical-align: middle; border-color: #f0e5e9; font-size: 13px; }
+.mt-records tbody tr:hover { background: #fdf9fa; }
+.mt-school-name { display: inline-block; max-width: 240px; color: var(--mt-ink); }
+.mt-records td small { color: var(--mt-muted); font-size: 11px; }
+.mt-year { font-size: 12px; white-space: nowrap; }
+.mt-status { font-size: 10px; font-weight: 600; color: #874828; background: #fbefe4; padding: 4px 8px; border-radius: 20px; white-space: nowrap; }
+.mt-status.is-complete { color: #32714a; background: #edf6f0; }
+.mt-progress { min-width: 110px; max-width: 140px; height: 4px; margin: 10px 0 5px; background: #f0e2e7; border-radius: 8px; overflow: hidden; }
+.mt-progress span { display: block; height: 100%; background: #922c43; border-radius: inherit; }
+.mt-date { display: block; white-space: nowrap; }
+.mt-actions { display: flex; gap: 6px; align-items: center; }
+.mt-actions form { margin: 0; }
+.mt-actions .btn { white-space: nowrap; border-radius: 6px; font-size: 11px; padding: 6px 9px; }
+.mt-actions .btn-outline-danger { border-color: transparent; }
+.mt-records-foot { padding-top: 16px; border-top: 1px solid #ead7dc; font-size: 12px; color: var(--mt-muted); }
+.mt-empty { padding: 36px 20px; text-align: center; }
+.mt-empty i { display: inline-grid; place-items: center; width: 60px; height: 60px; background: #f8ebef; color: #922c43; border-radius: 16px; font-size: 30px; margin-bottom: 16px; }
+.mt-empty h3 { font-size: 17px; color: var(--mt-ink); }
+.mt-empty p { max-width: 420px; margin: 8px auto 0; color: var(--mt-muted); line-height: 1.7; }
+.mt-tool [hidden] { display: none !important; }
+@media (max-width: 767.98px) {
+    .mt-tool .mi-header { padding: 24px; }
+    .mt-stats { gap: 10px; grid-template-columns: 1fr; }
+    .mt-stats > div { padding: 14px 18px; }
+    .mt-stats strong { font-size: 24px; }
+    .mt-tool .card-body { padding: 18px; }
+    .mt-create-bar { padding: 16px; }
+    .mt-create-bar .btn, .mt-search { width: 100%; }
+}
