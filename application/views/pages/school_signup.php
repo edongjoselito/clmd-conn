@@ -619,6 +619,7 @@
             }
         }
     </style>
+<?php $this->load->view('templates/pwa'); ?>
 </head>
 
 <body class="school-signup-page">

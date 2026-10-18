@@ -416,6 +416,7 @@ $reset_errors = validation_errors();
             }
         }
     </style>
+<?php $this->load->view('templates/pwa'); ?>
 </head>
 
 <body>

@@ -1,4 +1,8 @@
-<body>
+<?php
+$dashboard_method = strtolower((string) $this->router->fetch_method());
+$is_dashboard = in_array($dashboard_method, array('view', 'region', 'division', 'district', 'school_dashboard', 'learning_area_dashboard'), true);
+?>
+<body<?= $is_dashboard ? ' class="dashboard-wide"' : ''; ?>>
 
     <!-- Begin page -->
     <div id="wrapper">
@@ -131,6 +135,7 @@
                         </div>
 
                         <!-- item-->
+                        <?php if (strpos((string) $this->session->position, 'la_') !== 0): ?>
                         <a href="<?= base_url('Pages/edit_profile'); ?>" class="dropdown-item notify-item">
                             <i class="mdi mdi-account-outline"></i>
                             <span>Profile</span>
@@ -142,6 +147,7 @@
                             <span>Change Profile Image</span>
                         </button>
 
+                        <?php endif; ?>
                         <div class="dropdown-divider"></div>
 
                         <!-- item-->
@@ -243,6 +249,9 @@
                         <li class="menu-title">Navigation</li>
 
                         <li><a href="<?= base_url(); ?>" class="waves-effect"><i class="mdi mdi-view-dashboard"></i><span> Dashboard </span></a></li>
+                        <?php if (strpos((string) $this->session->position, 'la_') === 0): ?>
+                            <li><a href="<?= base_url('focal-persons'); ?>" class="waves-effect"><i class="mdi mdi-account-group-outline"></i><span> Focal Persons </span></a></li>
+                        <?php endif; ?>
                         <?php if ($this->session->position == 'district') { ?>
                             <li><a href="<?= base_url(); ?>pages/schools_district/<?= $this->session->district; ?>" class="waves-effect"><i class="fas fa-school"></i><span>Schools</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap" class="waves-effect"><i class="fas fa-chart-bar"></i><span> Learning Gap Overview</span></a></li>
@@ -321,6 +330,8 @@
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_records" class="waves-effect"><i class="fas fa-list"></i><span> Submitted Learning Gap</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_archives" class="waves-effect"><i class="mdi mdi-archive"></i><span> Archived Records</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_area_setup" class="waves-effect"><i class="mdi mdi-tune"></i><span> Learning Area Setup</span></a></li>
+                            <li><a href="<?= base_url('focal-persons'); ?>" class="waves-effect"><i class="mdi mdi-account-group-outline"></i><span> Focal Persons </span></a></li>
+                            <li><a href="<?= base_url('pages/userlist'); ?>" class="waves-effect"><i class="mdi mdi-account-supervisor"></i><span> Manage Users </span></a></li>
                             <li><a href="#" class="waves-effect" data-toggle="modal" data-target="#renren"><i class="fas fa-lock"></i><span>Change Password</span></a></li>
 
                         <?php } ?>

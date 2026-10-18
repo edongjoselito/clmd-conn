@@ -16,7 +16,8 @@
         <link href="assets/css/icons.min.css" rel="stylesheet" type="text/css" />
         <link href="assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-stylesheet" />
 
-    </head>
+    <?php $this->load->view('templates/pwa'); ?>
+</head>
 
     <body class="authentication-page">
 

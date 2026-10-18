@@ -30,6 +30,8 @@ if ($this->session->logged_in == false || $this->session->virified == 1) {
         <link href="<?= base_url(); ?>assets/css/icons.min.css" rel="stylesheet" type="text/css" />
         <link href="<?= base_url(); ?>assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-stylesheet" />
         <link href="<?= base_url(); ?>assets/css/llcm-theme.css" rel="stylesheet" type="text/css" />
-    </head>
+        <link href="<?= base_url(); ?>assets/css/dashboards.css?v=20261018" rel="stylesheet" type="text/css" />
+    <?php $this->load->view('templates/pwa'); ?>
+</head>
 
     

@@ -33,6 +33,13 @@ class Pages extends CI_Controller
             return;
         }
 
+        // Subject accounts have a deliberately small, read-only application surface.
+        if ($this->session->logged_in && strpos((string) $this->session->position, 'la_') === 0
+            && !in_array($method, array('view', 'learning_area_dashboard', 'focal_persons', 'change_fy',
+                'password_change_required', 'change_password_user', 'logout'), true)) {
+            show_error('This account can access only its assigned learning-area dashboard.', 403);
+        }
+
         // High-risk endpoints receive an explicit role policy here in addition
         // to their record-level checks below.
         $role_policies = array(
@@ -282,7 +289,7 @@ class Pages extends CI_Controller
 
     private function is_user_manager()
     {
-        return in_array($this->session->position, array('admin', 'division', 'ict', 'district'), true);
+        return in_array($this->session->position, array('admin', 'region', 'division', 'ict', 'district'), true);
     }
 
     private function is_division_user_manager()
@@ -294,6 +301,34 @@ class Pages extends CI_Controller
     {
         if (!$this->session->logged_in || !$this->is_user_manager()) {
             show_error('You are not authorized to manage users.', 403);
+        }
+    }
+
+    private function apply_regional_user_scope()
+    {
+        $this->load->library('Regional_user_scope');
+        $this->regional_user_scope->apply($this->db, $this->session->region);
+    }
+
+    private function validate_regional_user_assignment()
+    {
+        if ($this->session->position !== 'region') { return; }
+        $region = (int) $this->session->region;
+        $division_id = (int) $this->input->post('division_id');
+        $district_id = (int) $this->input->post('d_id');
+        $role = (string) $this->input->post('position');
+        if ($region <= 0) { show_error('Your account has no assigned region.', 403); }
+        if ($division_id > 0) {
+            $division = $this->db->where('id', $division_id)->where('region_id', $region)->get('division')->row();
+            if (!$division) { show_error('Select a division in your region.', 403); }
+        } elseif (!in_array($role, array('region'), true) && strpos($role, 'la_') !== 0) {
+            show_error('A division in your region is required for this role.', 400);
+        }
+        if ($district_id > 0) {
+            $district = $this->db->where('id', $district_id)->where('division_id', $division_id)->get('district')->row();
+            if (!$district) { show_error('Select a district in the selected division.', 403); }
+        } elseif (in_array($role, array('district', 'school'), true)) {
+            show_error('A district is required for this role.', 400);
         }
     }
 
@@ -671,6 +706,13 @@ class Pages extends CI_Controller
             show_404();
         }
 
+        if ($this->session->position === 'region') {
+            $this->apply_regional_user_scope();
+            if (!$this->db->where('id', (int) $user->id)->get('users')->row()) {
+                show_error('You can only manage non-administrator accounts in your region.', 403);
+            }
+        }
+
         if ($this->is_division_user_manager() && (string) $user->p_id !== (string) $this->session->division) {
             show_error('You can only manage users under your division.', 403);
         }
@@ -694,6 +736,13 @@ class Pages extends CI_Controller
 
         if ($this->session->position === 'district') {
             return in_array($position, array('district', 'school'), true);
+        }
+        if ($this->session->position === 'region') {
+            if ($position === 'admin') { return false; }
+            $this->config->load('learning_area_dashboards');
+            $areas = $this->config->item('learning_area_dashboards');
+            return isset($areas[substr((string) $position, 3)]) && strpos((string) $position, 'la_') === 0
+                || (bool) $this->Page_model->one_cond_row('position', 'pos', $position);
         }
         $position_record = $this->Page_model->one_cond_row('position', 'pos', $position);
 
@@ -889,6 +938,9 @@ class Pages extends CI_Controller
      */
     private function dashboard_path_for_position($position)
     {
+        if (strpos((string) $position, 'la_') === 0) {
+            return 'learning-area/' . substr($position, 3);
+        }
         $paths = array(
             'region'        => 'region',
             'division'      => 'division',
@@ -932,6 +984,111 @@ class Pages extends CI_Controller
      * Scope dashboards. Role access is enforced centrally by $role_policies in
      * the constructor, so each method only loads and renders.
      */
+    private function focal_person_access($write = false)
+    {
+        $role = (string) $this->session->position;
+        $this->config->load('learning_area_dashboards');
+        $areas = $this->config->item('learning_area_dashboards');
+        $reader = strpos($role, 'la_') === 0 && isset($areas[substr($role, 3)]);
+        if ($role !== 'region' && ($write || !$reader)) {
+            show_error('You are not authorized to manage focal persons.', 403);
+        }
+        if ($role === 'region' && (int) $this->session->region <= 0) {
+            show_error('Your account has no assigned region.', 403);
+        }
+        $this->load->model('Focal_person_model');
+        $this->Focal_person_model->initialize();
+    }
+
+    public function focal_persons()
+    {
+        $this->focal_person_access();
+        $can_manage = $this->session->position === 'region';
+        $region = $can_manage ? (int) $this->session->region : null;
+        $areas = $this->config->item('learning_area_dashboards');
+        // Learning-area scope is locked to the authenticated role, not query input.
+        $area = $can_manage ? (string) $this->input->get('learning_area', true) : substr($this->session->position, 3);
+        if ($area !== '' && !isset($areas[$area])) { show_error('Invalid learning area.', 400); }
+        $division_id = $can_manage ? max(0, (int) $this->input->get('division_id')) : 0;
+        $divisions = $can_manage
+            ? $this->db->where('region_id', $region)->order_by('description')->get('division')->result()
+            : array();
+        $this->render_dashboard('focal_persons', array(
+            'can_manage' => $can_manage, 'areas' => $areas, 'selected_area' => $area,
+            'divisions' => $divisions, 'selected_division' => $division_id,
+            'people' => $this->Focal_person_model->directory($region, $area, $division_id),
+        ));
+    }
+
+    public function focal_person_edit($id = 0)
+    {
+        $this->focal_person_access(true);
+        $id = (int) $id;
+        $region = (int) $this->session->region;
+        $person = $id ? $this->Focal_person_model->person($region, $id) : null;
+        if ($id && !$person) { show_404(); }
+        $error = '';
+        if (strtoupper($this->input->method()) === 'POST') {
+            $this->form_validation->set_rules('name', 'Focal Person', 'trim|required|max_length[150]');
+            $this->form_validation->set_rules('position', 'Position', 'trim|required|max_length[150]');
+            $this->form_validation->set_rules('division_id', 'Division', 'required|integer|greater_than[0]');
+            $this->form_validation->set_rules('learning_area', 'Learning Area', 'required|in_list[' . implode(',', array_keys($this->config->item('learning_area_dashboards'))) . ']');
+            if ($this->form_validation->run()) {
+                $data = array('learning_area' => $this->input->post('learning_area', true), 'name' => $this->input->post('name', true),
+                    'position' => $this->input->post('position', true),
+                    'division_id' => (int) $this->input->post('division_id'));
+                if ($this->input->post('remove_picture') === '1') { $data['picture'] = null; }
+                try {
+                    if (isset($_FILES['picture']) && $_FILES['picture']['error'] !== UPLOAD_ERR_NO_FILE) {
+                        if ($_FILES['picture']['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($_FILES['picture']['tmp_name'])) {
+                            throw new InvalidArgumentException('The picture could not be uploaded. Choose a PNG or JPEG up to 2 MB.');
+                        }
+                        $this->load->library('Profile_picture');
+                        $data['picture'] = $this->profile_picture->encode($_FILES['picture']['tmp_name']);
+                    }
+                    if (!$this->Focal_person_model->save($region, $id, $data)) {
+                        $error = 'Select a division within your region. The record could not be saved.';
+                    } else {
+                        $this->session->set_flashdata('success', $id ? 'Focal person updated.' : 'Focal person added.');
+                        redirect(base_url('focal-persons'));
+                        return;
+                    }
+                } catch (InvalidArgumentException $e) { $error = $e->getMessage();
+                } catch (RuntimeException $e) { $error = $e->getMessage(); }
+            }
+        }
+        $this->render_dashboard('focal_person_form', array('person' => $person, 'error' => $error, 'areas' => $this->config->item('learning_area_dashboards'),
+            'divisions' => $this->db->where('region_id', $region)->order_by('description')->get('division')->result()));
+    }
+
+    public function focal_person_delete($id = 0)
+    {
+        $this->focal_person_access(true);
+        $this->require_post();
+        if (!$this->Focal_person_model->delete((int) $this->session->region, (int) $id)) { show_404(); }
+        $this->session->set_flashdata('success', 'Focal person deleted.');
+        redirect(base_url('focal-persons'));
+    }
+
+    public function learning_area_dashboard($slug = '')
+    {
+        $this->config->load('learning_area_dashboards');
+        $areas = $this->config->item('learning_area_dashboards');
+        if (!isset($areas[$slug])) {
+            show_404();
+        }
+        if ($this->session->position !== 'la_' . $slug) {
+            show_error('You are not authorized to view this learning area.', 403);
+        }
+        $scope = array('type' => 'learning_area', 'id' => $slug);
+        $this->render_dashboard('dashboard_learning_area', array(
+            'area' => $areas[$slug],
+            'summary' => $this->Page_model->learning_gap_summary($scope),
+            'terms' => $this->Page_model->learning_gap_term_performance($scope),
+            'records' => $this->Page_model->learning_gap_records($scope),
+        ));
+    }
+
     public function region()
     {
         $this->render_dashboard('dashboard_region_learning_gap', $this->region_scope_data());
@@ -1994,8 +2151,13 @@ class Pages extends CI_Controller
         $data['title'] = "User List";
         $data['division_scope'] = false;
 
-        // Fetch all users for client-side DataTables
-        if ($this->session->position === 'district') {
+        // Fetch only accounts the current manager may act on.
+        if ($this->session->position === 'region') {
+            $this->apply_regional_user_scope();
+            $data['users'] = $this->db->order_by('lname, fname', 'ASC')->get('users')->result();
+            $data['title'] = 'Regional User List';
+            $data['regional_scope'] = true;
+        } elseif ($this->session->position === 'district') {
             $this->apply_district_user_scope();
             $data['users'] = $this->db->get('users')->result();
             $data['title'] = 'District User List';
@@ -2026,6 +2188,7 @@ class Pages extends CI_Controller
 
         // Build query
         $this->db->select('id, fname, mname, lname, username, position');
+        if ($this->session->position === 'region') { $this->apply_regional_user_scope(); }
         if ($this->is_division_user_manager()) {
             $this->db->where('p_id', (int) $this->session->division);
         }
@@ -2114,6 +2277,7 @@ class Pages extends CI_Controller
     public function userlist_division()
     {
         $this->require_user_manager();
+        if ($this->session->position === 'region') { $this->userlist(); return; }
         if ($this->session->position === 'district') {
             $this->userlist();
             return;
@@ -2438,8 +2602,16 @@ class Pages extends CI_Controller
             }
 
             $data['title'] = "New User";
-            $data['division'] = $this->Page_model->one_cond('division', 'region_id', 12);
-            if ($this->session->position === 'district') {
+            $data['division'] = $this->Page_model->one_cond('division', 'region_id', $this->session->position === 'region' ? (int) $this->session->region : 12);
+            if ($this->session->position === 'region') {
+                $data['pos'] = array_values(array_filter($this->Page_model->no_cond('position'), function ($position) {
+                    return $this->is_allowed_managed_position($position->pos);
+                }));
+                $this->config->load('learning_area_dashboards');
+                foreach ($this->config->item('learning_area_dashboards') as $slug => $area) {
+                    $data['pos'][] = (object) array('pos' => 'la_' . $slug, 'description' => $area['name'] . ' Coordinator');
+                }
+            } elseif ($this->session->position === 'district') {
                 $this->district_learning_gap_scope();
                 $data['pos'] = array_values(array_filter($this->Page_model->no_cond('position'), function ($position) {
                     return $this->is_allowed_managed_position($position->pos);
@@ -2473,6 +2645,7 @@ class Pages extends CI_Controller
                 show_error('You are not authorized to create this type of user.', 403);
             }
 
+            $this->validate_regional_user_assignment();
             $this->validate_managed_district($this->input->post('d_id'));
 
             $config['allowed_types'] = 'jpg|png';
@@ -2719,13 +2892,13 @@ class Pages extends CI_Controller
 
     public function profile()
     {
-        if (!$this->session->logged_in || $this->session->position !== 'admin') {
+        if (!$this->session->logged_in || !in_array($this->session->position, array('admin', 'region'), true)) {
             show_error('You are not authorized to update user profile pictures.', 403);
         }
 
         $this->require_post();
         $id = (int) $this->input->post('id', true);
-        $user = $this->Page_model->one_cond_row('users', 'id', $id);
+        $user = $this->get_managed_user($id);
         if (!$user) {
             show_404();
         }
@@ -2744,10 +2917,10 @@ class Pages extends CI_Controller
             }
             $this->Page_model->user_update_profile();
             $this->session->set_flashdata('success', 'Successfully updated.');
-            redirect(base_url() . 'pages/profilelist');
+            redirect(base_url() . ($this->session->position === 'region' ? 'pages/userlist' : 'pages/profilelist'));
         } else {
             $this->session->set_flashdata('danger', strip_tags($this->upload->display_errors('', '')));
-            redirect(base_url() . 'pages/profilelist');
+            redirect(base_url() . ($this->session->position === 'region' ? 'pages/userlist' : 'pages/profilelist'));
         }
     }
 

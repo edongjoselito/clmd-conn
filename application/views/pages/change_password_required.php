@@ -45,6 +45,7 @@
         .logout-button { padding: 0; border: 0; color: var(--muted); background: transparent; font-size: 13px; text-decoration: underline; }
         @media (max-width: 520px) { .password-card { padding: 26px 22px; } }
     </style>
+<?php $this->load->view('templates/pwa'); ?>
 </head>
 <body>
     <main class="password-card">

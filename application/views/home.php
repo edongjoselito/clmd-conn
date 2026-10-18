@@ -2622,10 +2622,19 @@ if ($seal_url === '') {
                 transform: none;
             }
         }
+        #downloads { scroll-margin-top: 110px; background: #f5f7fb; }
+        #downloads h2 { margin: 12px 0; }
+        #downloads .button { margin-top: 12px; }
+        #downloads .button:disabled { opacity: .65; cursor: default; }
+        .download-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin: 24px 0; }
+        .download-options article { padding: 24px; border: 1px solid #dce4ec; border-radius: 12px; background: #fff; }
+        .download-options h3 { margin: 0 0 12px; }
+        @media (max-width: 760px) { .download-options { grid-template-columns: 1fr; } }
     </style>
     <script>
         document.documentElement.className += ' has-js';
     </script>
+<?php $this->load->view('templates/pwa'); ?>
 </head>
 
 <body>
@@ -2644,7 +2653,7 @@ if ($seal_url === '') {
             <button class="menu-toggle" id="menuToggle" type="button" aria-controls="siteNav" aria-expanded="false" aria-label="Open navigation menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path d="M4 7h16M4 12h16M4 17h16" />
                 </svg></button>
-            <nav class="site-nav" id="siteNav" aria-label="Main navigation"><a href="#about">About</a><a href="#process">Data-to-action</a><a href="<?= base_url('signup'); ?>">School Account Signup</a><a class="nav-login" href="#portal" data-open-login>Sign in</a></nav>
+            <nav class="site-nav" id="siteNav" aria-label="Main navigation"><a href="#about">About</a><a href="#process">Data-to-action</a><a href="#downloads">Downloads</a><a href="<?= base_url('signup'); ?>">School Account Signup</a><a class="nav-login" href="#portal" data-open-login>Sign in</a></nav>
         </div>
     </header>
     <?php if (!empty($page_success)) : ?><div class="page-message" role="status"><?= html_escape($page_success); ?></div><?php endif; ?>
@@ -2835,6 +2844,30 @@ if ($seal_url === '') {
                 </div>
             </div>
         </section>
+        <section class="section" id="downloads" aria-labelledby="downloads-title">
+            <div class="container">
+                <div class="eyebrow">CLMD Portal on your device</div>
+                <h2 id="downloads-title">Download &amp; install</h2>
+                <p>Install CLMD Portal for quick access from your home screen or desktop. Installation happens through your browser; no separate installer file is needed.</p>
+                <button type="button" class="button button-gold" data-pwa-install aria-describedby="pwa-install-status" aria-controls="pwa-install-help">How to install</button>
+                <p id="pwa-install-status" role="status" data-pwa-status>Use the instructions below if your browser does not show an installation prompt.</p>
+                <div id="pwa-install-help" data-pwa-help tabindex="-1" hidden>
+                    <h3>Install on your device</h3>
+                    <p><strong>Firefox on Mac:</strong> Web app installation is not supported. Use the portal in Firefox, bookmark it with <strong>Command+D</strong>, or open this address in Chrome or Safari to install.</p>
+                    <p><strong>Mac with Safari:</strong> On macOS Sonoma 14 or later, choose <strong>File &gt; Add to Dock</strong>, then click <strong>Add</strong>. This step must be done from Safari’s menu.</p>
+                    <p><strong>Chrome on Mac or Windows:</strong> Open the <strong>three-dot menu &gt; Cast, save, and share &gt; Install page as app</strong>. If already installed, enter <strong>chrome://apps</strong> in the address bar to open it. In Edge, use <strong>Menu &gt; Apps &gt; Install this site as an app</strong>.</p>
+                    <p><strong>iPhone or iPad:</strong> In Safari, use <strong>Share &gt; Add to Home Screen</strong>.</p>
+                </div>
+                <noscript><p>Use your browser menu to install. In Safari on macOS Sonoma 14 or later, choose File &gt; Add to Dock.</p></noscript>
+                <div class="download-options">
+                    <article><h3>Android</h3><p>Open this page in Chrome, then use <strong>Install CLMD Portal</strong> when available. You can also look for <strong>Install app</strong> or <strong>Add to Home screen</strong> in the browser menu.</p></article>
+                    <article><h3>iPhone &amp; iPad</h3><p>Open this page in Safari. Tap <strong>Share</strong>, choose <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>.</p></article>
+                    <article><h3>Mac &amp; Windows</h3><p><strong>Safari on Mac:</strong> With macOS Sonoma 14 or later, choose <strong>File &gt; Add to Dock</strong>, then <strong>Add</strong>.</p><p>Open this page in Chrome or Edge. Click <strong>Install CLMD Portal</strong> when available, or use the install option in the address bar or browser menu.</p></article>
+                </div>
+                <p>Internet access is required for signing in, viewing reports, and submitting forms.</p>
+            </div>
+        </section>
+
     </main>
 
     <footer class="site-footer">
@@ -2846,7 +2879,7 @@ if ($seal_url === '') {
                     </div>
                     <p class="footer-copy">The CLMD portal supports the responsible use of learning data across all learning areas for informed decisions, focused assistance, and improved learner outcomes across the Davao Region.</p>
                 </div>
-                <nav class="footer-links" aria-label="Footer navigation"><strong>Quick links</strong><a href="#about">About the CLMD portal</a><a href="#process">Data-to-action cycle</a><a href="#portal" data-open-login>Portal access</a></nav>
+                <nav class="footer-links" aria-label="Footer navigation"><strong>Quick links</strong><a href="#about">About the CLMD portal</a><a href="#process">Data-to-action cycle</a><a href="#downloads">Download / install app</a><a href="#portal" data-open-login>Portal access</a></nav>
             </div>
             <div class="copyright"><span>© <?= date('Y'); ?> Department of Education Regional Office XI. All rights reserved.</span><span><?= html_escape($region_name); ?></span></div>
         </div>

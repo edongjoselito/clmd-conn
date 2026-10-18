@@ -266,6 +266,7 @@
       }
     }
   </style>
+<?php $this->load->view('templates/pwa'); ?>
 </head>
 
 <body>

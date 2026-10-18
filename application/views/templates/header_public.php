@@ -25,6 +25,7 @@
             padding: 18px 12px 32px;
         }
     </style>
+<?php $this->load->view('templates/pwa'); ?>
 </head>
 
 <body class="public-report-layout">

@@ -26,7 +26,7 @@ elseif ($is_local_request && $request_host !== '')
 }
 else
 {
-	$config['base_url'] = 'https://ap.depedmis.com/';
+	$config['base_url'] = 'https://clmd.depedmis.online/';
 }
 
 $configured_scheme = strtolower((string) parse_url($config['base_url'], PHP_URL_SCHEME));

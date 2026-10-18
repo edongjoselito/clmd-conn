@@ -84,4 +84,5 @@
       color: #fff; border-radius: 20px;
     }
   </style>
+<?php $this->load->view('templates/pwa'); ?>
 </head>

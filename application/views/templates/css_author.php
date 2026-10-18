@@ -152,4 +152,5 @@
       color: #b22222;
     }
   </style>
+<?php $this->load->view('templates/pwa'); ?>
 </head>

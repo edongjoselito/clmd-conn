@@ -85,3 +85,10 @@ $route['monitoring-tool/settings/indicators'] = 'pages/monitoring_indicators';
 $route['monitoring/tool'] = 'pages/monitoring_tool';
 
 $route['monitoring-tool/settings/tools'] = 'pages/monitoring_tools';
+
+$route['learning-area/(:any)'] = 'pages/learning_area_dashboard/$1';
+
+$route['focal-persons'] = 'pages/focal_persons';
+$route['focal-persons/new'] = 'pages/focal_person_edit';
+$route['focal-persons/(:num)/edit'] = 'pages/focal_person_edit/$1';
+$route['focal-persons/(:num)/delete'] = 'pages/focal_person_delete/$1';

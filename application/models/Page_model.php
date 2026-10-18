@@ -131,8 +131,8 @@ public function user_insert(){
     'lname' => $this->input->post('lname'),
     'gender' => $this->input->post('gender'),
     'r_id' => $this->session->region,
-    'p_id' => $division_id,
-    'd_id' => $this->session->position === 'district' ? (int) $this->session->district : $this->input->post('d_id'),
+    'p_id' => $this->session->position === 'region' ? ((int) $division_id ?: null) : $division_id,
+    'd_id' => $this->session->position === 'region' ? ((int) $this->input->post('d_id') ?: null) : ($this->session->position === 'district' ? (int) $this->session->district : $this->input->post('d_id')),
     'image' => $filename,
     'virified' => 0
     ); 
@@ -2007,6 +2007,17 @@ public function tana_summary_del(){
 
 public function log_audit_trail($action, $table_name, $record_id = null, $old_values = null, $new_values = null)
 {
+    // Older local installations may not have run the audit-table setup.
+    $this->db->query("CREATE TABLE IF NOT EXISTS audit_trail (
+        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NULL, username VARCHAR(254) NULL, user_position VARCHAR(50) NULL,
+        action VARCHAR(50) NOT NULL, table_name VARCHAR(100) NOT NULL,
+        record_id VARCHAR(100) NULL, old_values TEXT NULL, new_values TEXT NULL,
+        ip_address VARCHAR(45) NULL, user_agent VARCHAR(255) NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        KEY user_id (user_id), KEY action (action), KEY table_name (table_name), KEY created_at (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     $data = array(
         'user_id' => isset($this->session->id) ? $this->session->id : null,
         'username' => isset($this->session->username) ? $this->session->username : null,
@@ -2136,6 +2147,18 @@ private function learning_gap_year($year = null)
 
 private function apply_learning_gap_scope($scope, $alias = 'lgr')
 {
+    // Always derive subject scope from the authenticated role, never a URL/filter.
+    if (strpos((string) $this->session->position, 'la_') === 0) {
+        $this->config->load('learning_area_dashboards');
+        $areas = $this->config->item('learning_area_dashboards');
+        $slug = substr($this->session->position, 3);
+        if (!isset($areas[$slug])) {
+            show_error('No learning area is assigned to this account.', 403);
+        }
+        $prefix = $alias === '' ? '' : $alias . '.';
+        $this->db->where_in($prefix . 'learning_area', $areas[$slug]['aliases']);
+        return;
+    }
     // District accounts must never receive a wider scope from a caller.
     if ($this->session->position === 'district') {
         $district_id = (int) $this->session->district;
