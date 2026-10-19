@@ -106,6 +106,18 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
             <?= lg_interpretation_box($term_interp); ?>
         </div>
     </div>
+    <div class="lgm-card term-chart-card">
+        <div class="lgm-card-head">
+            <div><h4><i class="mdi mdi-chart-bar mr-1"></i> CPL and Recorded Assessment Counts per Learning Area</h4><small><?= html_escape($scope_label); ?> · All terms in fiscal year <?= (int) $this->session->fy; ?>. Counts are sums across submitted records, not unique learners.</small></div>
+            <small>CPL is weighted by assessed learners and excludes missing CPL values.</small>
+        </div>
+        <div class="lgm-card-body">
+            <div class="term-chart-wrap">
+                <canvas id="areaPerformanceChart" role="img" aria-label="Chart of class proficiency level, recorded assessed counts, and recorded gap counts per learning area"></canvas>
+                <div id="areaPerformanceEmpty" class="term-chart-empty"><div><i class="mdi mdi-chart-bar-stacked"></i>No learning area assessment data has been submitted yet.</div></div>
+            </div>
+        </div>
+    </div>
     <?php endif; ?>
 
     <?php if ($is_school && $entry_mode): ?>
@@ -195,10 +207,24 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
                 's2' => $row->cpl_summative_2 === null ? null : (float) $row->cpl_summative_2,
             );
         }, $term_performance), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-        var canvas = document.getElementById('termPerformanceChart');
-        var empty = document.getElementById('termPerformanceEmpty');
+        renderPerformanceChart(rows, 'termPerformanceChart', 'termPerformanceEmpty');
+        var areaRows = <?= json_encode(array_map(function ($row) {
+            return array(
+                'term' => (string) $row->learning_area,
+                'assessed' => (int) $row->learners_assessed,
+                'gap' => (int) $row->learners_with_gap,
+                'cpl' => $row->class_proficiency_level === null ? null : (float) $row->class_proficiency_level,
+                's1' => null,
+                's2' => null,
+            );
+        }, $area_performance), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+        renderPerformanceChart(areaRows, 'areaPerformanceChart', 'areaPerformanceEmpty');
+
+        function renderPerformanceChart(rows, canvasId, emptyId) {
+        var canvas = document.getElementById(canvasId);
+        var empty = document.getElementById(emptyId);
         if (!canvas || typeof Chart === 'undefined') return;
-        var hasData = rows.some(function (row) { return row.assessed > 0 || row.gap > 0 || row.cpl !== null; });
+        var hasData = rows.some(function (row) { return row.assessed !== null || row.gap !== null || row.cpl !== null; });
         var hasSummative = rows.some(function (row) { return row.s1 !== null || row.s2 !== null; });
         if (!hasData && !hasSummative) {
             canvas.style.display = 'none';
@@ -236,6 +262,7 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
                 }
             }
         });
+        }
     }());
 </script>
 <?php endif; ?>

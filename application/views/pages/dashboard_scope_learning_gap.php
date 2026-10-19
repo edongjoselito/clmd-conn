@@ -6,6 +6,7 @@
 $scope = array('type' => 'division', 'id' => (int) $this->session->division);
 $summary = $this->Page_model->learning_gap_summary($scope);
 $term_performance = $this->Page_model->learning_gap_term_performance($scope);
+$area_performance = $this->Page_model->learning_gap_area_performance($scope);
 $thematic_analysis = $this->Page_model->learning_gap_thematic_analysis($scope);
 $records_url = base_url('Pages/learning_gap_records');
 $overview_url = base_url('Pages/learning_gap');
@@ -234,6 +235,18 @@ if ($div_encoded_total > 0) {
 
     <section class="lg-card">
         <div class="lg-card-head">
+            <div><h4>Division CPL and Recorded Gap Rate per Learning Area</h4><p>All terms in fiscal year <?= html_escape($div_fy); ?>. Gap rate uses total recorded gap counts divided by total assessed counts. CPL is weighted by assessed count and excludes missing CPL values.</p></div>
+        </div>
+        <div class="lg-card-body">
+            <div class="performance-chart-wrap">
+                <canvas id="scopeAreaPerformanceChart" role="img" aria-label="Division class proficiency level and recorded gap rate per learning area"></canvas>
+                <div id="scopeAreaPerformanceEmpty" class="chart-empty"><div><i class="mdi mdi-chart-bar"></i>No learning area assessment data has been submitted yet.</div></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="lg-card">
+        <div class="lg-card-head">
             <div><h4>Automated Thematic Analysis</h4><p>Recurring themes detected from school-submitted Intervention / Action and Remarks.</p></div>
             <span class="analysis-badge"><i class="mdi mdi-auto-fix"></i> NLP-assisted</span>
         </div>
@@ -387,6 +400,41 @@ if ($div_encoded_total > 0) {
         } else if (termCanvas && termEmpty) {
             termCanvas.style.display = 'none';
             termEmpty.style.display = 'flex';
+        }
+        var areaRows = <?= json_encode(array_map(function ($row) {
+            $assessed = (int) $row->learners_assessed;
+            return array(
+                'area' => (string) $row->learning_area,
+                'cpl' => $row->class_proficiency_level === null ? null : (float) $row->class_proficiency_level,
+                'gapPercentage' => $assessed > 0 ? round((int) $row->learners_with_gap / $assessed * 100, 2) : null,
+            );
+        }, $area_performance), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+        var areaCanvas = document.getElementById('scopeAreaPerformanceChart');
+        var areaEmpty = document.getElementById('scopeAreaPerformanceEmpty');
+        if (areaCanvas && areaRows.some(function (row) { return row.cpl !== null || row.gapPercentage !== null; })) {
+            new Chart(areaCanvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: areaRows.map(function (row) { return row.area; }),
+                    datasets: [
+                        { label: 'Recorded Gap Rate (%)', data: areaRows.map(function (row) { return row.gapPercentage; }), backgroundColor: 'rgba(229,145,43,.78)', borderColor: '#d57d16', borderWidth: 1 },
+                        { label: 'CPL (%)', data: areaRows.map(function (row) { return row.cpl; }), backgroundColor: 'rgba(32,128,92,.78)', borderColor: '#20805c', borderWidth: 1 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } },
+                    tooltips: { mode: 'index', intersect: false, callbacks: { label: function (item, data) { return data.datasets[item.datasetIndex].label + ': ' + (item.yLabel === null ? 'No data' : Number(item.yLabel).toFixed(1) + '%'); } } },
+                    scales: {
+                        xAxes: [{ gridLines: { display: false }, ticks: { autoSkip: false }, barPercentage: .75, categoryPercentage: .7 }],
+                        yAxes: [{ ticks: { beginAtZero: true, max: 100, callback: function (value) { return value + '%'; } }, scaleLabel: { display: true, labelString: 'Percentage' }, gridLines: { color: 'rgba(28,72,101,.08)' } }]
+                    }
+                }
+            });
+        } else if (areaCanvas && areaEmpty) {
+            areaCanvas.style.display = 'none';
+            areaEmpty.style.display = 'flex';
         }
     }());
 </script>

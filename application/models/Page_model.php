@@ -2264,6 +2264,25 @@ public function learning_gap_summary($scope)
     return $this->db->get()->row();
 }
 
+/** Assessment totals and learner-weighted CPL grouped by learning area. */
+public function learning_gap_area_performance($scope)
+{
+    $this->ensure_learning_gap_archive_schema();
+    $this->db->select("lgr.learning_area, COUNT(*) AS record_count,
+        SUM(lgr.learners_assessed) AS learners_assessed,
+        SUM(lgr.learners_with_gap) AS learners_with_gap,
+        ROUND(SUM(CASE WHEN lgr.class_proficiency_level IS NOT NULL
+            THEN lgr.class_proficiency_level * GREATEST(1, lgr.learners_assessed) END)
+            / NULLIF(SUM(CASE WHEN lgr.class_proficiency_level IS NOT NULL
+            THEN GREATEST(1, lgr.learners_assessed) ELSE 0 END), 0), 2)
+            AS class_proficiency_level", false)
+        ->from('learning_gap_records lgr')
+        ->where('lgr.fiscal_year', $this->learning_gap_year());
+    $this->apply_learning_gap_scope($scope);
+    return $this->db->group_by('lgr.learning_area')
+        ->order_by('lgr.learning_area', 'ASC')->get()->result();
+}
+
 /**
  * Assessment totals and weighted class proficiency level for each trimester.
  * CPL is weighted by the number of assessed learners so larger classes have a
