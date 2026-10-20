@@ -2192,10 +2192,11 @@ public function learning_gap_records($scope, $year = null)
 {
     $this->ensure_learning_gap_archive_schema();
     $this->ensure_learning_gap_summative_schema();
-    $this->db->select('lgr.*, s.schoolName, d.description AS division_name')
+    $this->db->select('lgr.*, s.schoolName, d.description AS division_name, dist.description AS district_name')
         ->from('learning_gap_records lgr')
         ->join('schools s', 's.schoolID = lgr.school_id', 'left')
         ->join('division d', 'd.id = lgr.division_id', 'left')
+        ->join('district dist', 'dist.id = lgr.district_id', 'left')
         ->where('lgr.fiscal_year', $this->learning_gap_year($year));
 
     $this->apply_learning_gap_scope($scope);
@@ -2215,22 +2216,26 @@ public function learning_gap_archive_years($scope)
         ->get()->result();
 }
 
-public function learning_gap_school_competency_summary($scope, $grade = '')
+public function learning_gap_school_competency_summary($scope, $grade = '', $learning_area = '', $top_three = false)
 {
     $competencies = array();
     $grades = array();
+    $areas = array();
     $school_ids = array();
     foreach ($this->learning_gap_records($scope) as $record) {
         $record_grade = trim((string) $record->grade_level);
+        $record_area = trim((string) $record->learning_area);
+        if ($record_area !== '') $areas[$record_area] = $record_area;
         if ($record_grade !== '') $grades[$record_grade] = $record_grade;
         if ($grade !== '' && $record_grade !== $grade) continue;
+        if ($learning_area !== '' && $record_area !== $learning_area) continue;
         foreach (preg_split('/\r\n|\r|\n/', (string) $record->least_learned_competency) as $text) {
             $text = trim($text);
             if ($text === '') continue;
             $key = json_encode(array($record_grade, trim((string) $record->learning_area), $text));
             if (!isset($competencies[$key])) {
                 $competencies[$key] = array('text' => $text, 'grade' => $record_grade,
-                    'area' => $record->learning_area, 'schools' => array());
+                    'area' => $record_area, 'schools' => array());
             }
             // One school contributes one count, even across repeated records or trimesters.
             $school_id = (string) $record->school_id;
@@ -2240,7 +2245,6 @@ public function learning_gap_school_competency_summary($scope, $grade = '')
     }
     foreach ($competencies as &$competency) {
         $competency['school_count'] = count($competency['schools']);
-        unset($competency['schools']);
     }
     unset($competency);
     $competencies = array_values($competencies);
@@ -2249,8 +2253,30 @@ public function learning_gap_school_competency_summary($scope, $grade = '')
             ?: strnatcasecmp($a['grade'], $b['grade'])
             ?: strnatcasecmp($a['text'], $b['text']);
     });
+    if ($top_three) {
+        $area_counts = array();
+        $competencies = array_values(array_filter($competencies, function ($row) use (&$area_counts) {
+            $area = $row['area'];
+            if (!isset($area_counts[$area])) $area_counts[$area] = 0;
+            return ++$area_counts[$area] <= 3;
+        }));
+        usort($competencies, function ($a, $b) {
+            return strnatcasecmp($a['area'], $b['area'])
+                ?: $b['school_count'] <=> $a['school_count']
+                ?: strnatcasecmp($a['grade'], $b['grade'])
+                ?: strnatcasecmp($a['text'], $b['text']);
+        });
+    }
+    $school_ids = array();
+    foreach ($competencies as &$competency) {
+        $school_ids += $competency['schools'];
+        unset($competency['schools']);
+    }
+    unset($competency);
     natcasesort($grades);
+    natcasesort($areas);
     return array('competency_rows' => $competencies, 'grade_options' => array_values($grades),
+        'learning_area_options' => array_values($areas),
         'reporting_school_count' => count($school_ids));
 }
 
@@ -2687,7 +2713,8 @@ public function save_learning_gap_record($school_id)
     $assessed = (int) $this->input->post('learners_assessed', true);
     $with_gap = (int) $this->input->post('learners_with_gap', true);
     $class_proficiency_level = trim((string) $this->input->post('class_proficiency_level', true));
-    $proficiency_level = trim((string) $this->input->post('proficiency_level', true));
+    $this->load->helper('learning_gap');
+    $proficiency_level = lg_proficiency_level($class_proficiency_level);
     // Summative CPL columns are only written while the school has the feature
     // enabled; disabling the feature never wipes values already encoded.
     $summative_enabled = (int) $school->cpl_summative_enabled === 1;
@@ -3282,11 +3309,14 @@ private function ensure_learning_competencies_table()
     $this->db->where('term', '')->update('learning_competencies', array('term' => 'All Terms'));
 }
 
-public function learning_area_options($division_id, $grade_level)
+public function learning_area_options($grade_level)
 {
-    $areas = $this->db->select('learning_area')->where('division_id', (int) $division_id)
-        ->where('grade_level', $grade_level)->order_by('learning_area', 'ASC')
-        ->get('learning_area_settings')->result_array();
+    // Subject choices depend only on grade, regardless of where they were configured.
+    $areas = $this->db->distinct()->select('areas.learning_area')
+        ->from('learning_area_settings areas')
+        ->where('areas.grade_level', $grade_level)
+        ->order_by('areas.learning_area', 'ASC')
+        ->get()->result_array();
     return array_map(function ($area) { return $area['learning_area']; }, $areas);
 }
 

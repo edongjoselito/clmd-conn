@@ -7,8 +7,8 @@ $competency_items = function ($competencies) {
     return array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string) $competencies))));
 };
 $filters = array(
-    'grade_level' => array('label' => 'Grade level', 'value' => $grade_filter, 'all' => 'All grades'),
-    'learning_area' => array('label' => 'Learning area', 'value' => $learning_area_filter, 'all' => 'All learning areas'),
+    'grade_level' => array('label' => 'Grade Level', 'value' => $grade_filter, 'all' => 'All grades'),
+    'learning_area' => array('label' => 'Learning Area', 'value' => $learning_area_filter, 'all' => 'All learning areas'),
     'term' => array('label' => 'Trimester', 'value' => $term_filter, 'all' => 'All trimesters'),
 );
 $status_styles = array(
@@ -90,19 +90,55 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
         </div>
     </div>
 
-    <section class="rec-card" aria-labelledby="rec-filters-title">
-        <div class="rec-card-head">
-            <h2 id="rec-filters-title">Find records</h2>
-            <p>Filters apply within your assigned scope.</p>
-        </div>
-        <form class="rec-filter" method="get" action="<?= $records_url; ?>">
-            <?php if ($has_year_filter) : ?>
-                <input type="hidden" name="year" value="<?= (int) $record_year; ?>">
+    <div class="rec-filter-toolbar mb-3">
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#recordFiltersModal"><i class="mdi mdi-filter-outline" aria-hidden="true"></i> Filters<?= $has_record_filters ? ' (Active)' : ''; ?></button>
+        <?php if ($has_record_filters): ?><a class="btn btn-outline-secondary" href="<?= $records_url; ?>">Clear All Filters</a><?php endif; ?>
+            <?php if ($has_record_filters) : ?>
+                <div class="rec-active">
+                    <span class="rec-active-label">Active filters</span>
+                    <?php if ($division_filter > 0) : ?><span class="rec-active-chip">Division: <?= html_escape($division_options[$division_filter] ?? (string) $division_filter); ?></span><?php endif; ?>
+                    <?php if ($district_filter > 0): ?><span class="rec-active-chip">District: <?= html_escape($district_options[$district_filter] ?? (string) $district_filter); ?></span><?php endif; ?>
+                    <?php if ($proficiency_filter !== ''): ?><span class="rec-active-chip">Proficiency: <?= html_escape($proficiency_filter); ?></span><?php endif; ?>
+                    <?php foreach ($filters as $filter) : ?>
+                        <?php if ($filter['value'] !== '') : ?>
+                            <span class="rec-active-chip"><?= html_escape($filter['label'] . ': ' . $filter['value']); ?></span>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                    <?php if ($competency_filter !== '') : ?>
+                        <span class="rec-active-chip">Competency: <?= html_escape($competency_filter); ?></span>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
-            <?php if ($division_filter > 0) : ?>
-                <input type="hidden" name="division_id" value="<?= (int) $division_filter; ?>">
-            <?php endif; ?>
-            <div class="rec-filter-grid">
+    </div>
+
+    <div class="modal fade" id="recordFiltersModal" tabindex="-1" role="dialog" aria-labelledby="recordFiltersTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="recordFiltersTitle">Filter Records</h2>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Filters apply within your assigned scope.</p>
+                    <div class="mb-3" role="group" aria-label="Quick filter choices">
+                        <button type="button" class="btn btn-sm btn-outline-primary mb-1" data-record-filter="all">All Filters</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary mb-1" data-record-filter="division">By Division</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary mb-1" data-record-filter="district">By Division and District</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary mb-1" data-record-filter="area">By Division and Learning Area</button>
+                    </div>
+                    <p id="record-filter-hint" class="text-muted" role="status">Choose any combination of filters, then select Apply Filters.</p>
+                    <form id="recordFiltersForm" method="get" action="<?= $records_path; ?>">
+                        <input type="hidden" name="filter_mode" id="record-filter-mode" value="all">
+                        <?php if ($has_year_filter): ?><input type="hidden" name="year" value="<?= (int) $record_year; ?>"><?php endif; ?>
+                        <div class="rec-modal-filter-grid">
+                <div class="rec-field"><label for="proficiency-filter">Proficiency Level</label><select id="proficiency-filter" name="proficiency_level" class="custom-select"><option value="">All proficiency levels</option>
+                    <?php foreach ($proficiency_options as $level): ?><option value="<?= html_escape($level); ?>" <?= $proficiency_filter === $level ? 'selected' : ''; ?>><?= html_escape($level); ?></option><?php endforeach; ?>
+                </select></div>
+                <?php foreach (array('division' => $division_options, 'district' => $district_options) as $kind => $options): $selected = $kind === 'division' ? $division_filter : $district_filter; ?>
+                    <div class="rec-field"><label for="proficiency-<?= $kind; ?>"><?= ucfirst($kind); ?></label><select id="proficiency-<?= $kind; ?>" name="<?= $kind; ?>_id" class="custom-select"><option value="">All <?= $kind; ?>s in scope</option>
+                    <?php foreach ($options as $id => $label): ?><option value="<?= (int) $id; ?>" <?= $selected === (int) $id ? 'selected' : ''; ?>><?= html_escape($label); ?></option><?php endforeach; ?>
+                    </select></div>
+                <?php endforeach; ?>
                 <?php foreach ($filters as $field => $filter) : ?>
                     <?php
                     $options = isset($record_filter_options[$field]) ? $record_filter_options[$field] : array();
@@ -121,32 +157,20 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
                     </div>
                 <?php endforeach; ?>
                 <div class="rec-field">
-                    <label for="filter-competency">Exact competency</label>
+                    <label for="filter-competency">Exact Competency</label>
                     <input id="filter-competency" name="competency" class="form-control" value="<?= html_escape($competency_filter); ?>" placeholder="Enter full competency text">
                 </div>
-                <div class="rec-filter-actions">
-                    <button class="btn btn-primary" type="submit">Apply filters</button>
-                    <?php if ($has_record_filters) : ?>
-                        <a class="btn btn-outline-secondary" href="<?= $records_url; ?>">Clear all</a>
-                    <?php endif; ?>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <a class="btn btn-outline-secondary mr-auto" href="<?= $records_url; ?>">Clear All Filters</a>
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                    <button type="submit" form="recordFiltersForm" class="btn btn-primary">Apply Filters</button>
                 </div>
             </div>
-            <?php if ($has_record_filters) : ?>
-                <div class="rec-active">
-                    <span class="rec-active-label">Active filters</span>
-                    <?php if ($division_filter > 0) : ?><span class="rec-active-chip">Selected division</span><?php endif; ?>
-                    <?php foreach ($filters as $filter) : ?>
-                        <?php if ($filter['value'] !== '') : ?>
-                            <span class="rec-active-chip"><?= html_escape($filter['label'] . ': ' . $filter['value']); ?></span>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                    <?php if ($competency_filter !== '') : ?>
-                        <span class="rec-active-chip">Competency: <?= html_escape($competency_filter); ?></span>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
-        </form>
-    </section>
+        </div>
+    </div>
 
     <section class="rec-card" aria-labelledby="rec-list-title">
         <div class="rec-card-head">
@@ -266,3 +290,66 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
         <?php endif; ?>
     </section>
 </div>
+
+<script>
+(function () {
+    var division = document.getElementById('proficiency-division');
+    var district = document.getElementById('proficiency-district');
+    var area = document.getElementById('filter-learning_area');
+    var districtDivisions = <?= json_encode($district_divisions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    var hint = document.getElementById('record-filter-hint');
+    function updateDistricts() {
+        Array.prototype.forEach.call(district.options, function (option) {
+            var excluded = option.value !== '' && division.value !== '' && String(districtDivisions[option.value]) !== division.value;
+            option.hidden = excluded;
+            option.disabled = excluded;
+            if (excluded && option.selected) district.value = '';
+        });
+    }
+    division.addEventListener('change', updateDistricts);
+    updateDistricts();
+    var fieldsByMode = {
+        all: ['division_id', 'district_id', 'learning_area', 'proficiency_level', 'grade_level', 'term', 'competency'],
+        division: ['division_id'],
+        district: ['division_id', 'district_id'],
+        area: ['division_id', 'learning_area']
+    };
+    var buttons = document.querySelectorAll('[data-record-filter]');
+    function setMode(mode, clearHidden) {
+        if (!Object.prototype.hasOwnProperty.call(fieldsByMode, mode)) mode = 'all';
+        document.getElementById('record-filter-mode').value = mode;
+        Array.prototype.forEach.call(document.querySelectorAll('#recordFiltersForm .rec-field'), function (field) {
+            var input = field.querySelector('select, input');
+            var visible = fieldsByMode[mode].indexOf(input.name) !== -1;
+            field.hidden = !visible;
+            input.disabled = !visible;
+            if (!visible && clearHidden) input.value = '';
+        });
+        Array.prototype.forEach.call(buttons, function (button) {
+            var active = button.getAttribute('data-record-filter') === mode;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        hint.textContent = {
+            all: 'Choose any combination of filters, then select Apply Filters.',
+            division: 'Select a Division, then select Apply Filters.',
+            district: 'Select a Division and a District, then select Apply Filters.',
+            area: 'Select a Division and Learning Area, then select Apply Filters.'
+        }[mode];
+        updateDistricts();
+    }
+    var initialMode = new URLSearchParams(window.location.search).get('filter_mode') || 'all';
+    // Keep externally linked filters visible if they do not fit the requested mode.
+    if (Object.prototype.hasOwnProperty.call(fieldsByMode, initialMode)) {
+        Array.prototype.forEach.call(document.querySelectorAll('#recordFiltersForm .rec-field select, #recordFiltersForm .rec-field input'), function (input) {
+            if (input.value && fieldsByMode[initialMode].indexOf(input.name) === -1) initialMode = 'all';
+        });
+    }
+    setMode(initialMode, false);
+    Array.prototype.forEach.call(buttons, function (button) {
+        button.addEventListener('click', function () {
+            setMode(button.getAttribute('data-record-filter'), true);
+        });
+    });
+}());
+</script>

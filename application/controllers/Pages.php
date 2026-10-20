@@ -1254,7 +1254,11 @@ class Pages extends CI_Controller
             return;
         }
         $grade = trim((string) $this->input->get('grade_level', true));
-        $data = $this->Page_model->learning_gap_school_competency_summary($scope, $grade);
+        $learning_area = trim((string) $this->input->get('learning_area', true));
+        $top_three = $this->input->get('ranking', true) === 'top3';
+        $data = $this->Page_model->learning_gap_school_competency_summary($scope, $grade, $learning_area, $top_three);
+        $data['top_three'] = $top_three;
+        $data['learning_area_filter'] = $learning_area;
         $data['title'] = 'Learning Gap Summary';
         $data['grade_filter'] = $grade;
         $data['is_region'] = $is_region;
@@ -1326,13 +1330,20 @@ class Pages extends CI_Controller
         $data['has_year_filter'] = $requested_year > 0;
         $data['is_archive_year'] = $data['record_year'] < (int) date('Y');
         $data['grade_filter'] = trim((string) $this->input->get('grade_level', true));
-        $data['division_filter'] = $scope['type'] === 'region'
-            ? (int) $this->input->get('division_id', true)
-            : 0;
+        $data['division_filter'] = max(0, (int) $this->input->get('division_id', true));
+        $data['district_filter'] = max(0, (int) $this->input->get('district_id', true));
+        $data['proficiency_filter'] = trim((string) $this->input->get('proficiency_level', true));
+        $this->load->helper('learning_gap');
+        $data['proficiency_options'] = array_column(lg_proficiency_levels(), 'label');
+        $data['division_options'] = array();
+        $data['district_options'] = array();
+        $data['district_divisions'] = array();
         $data['learning_area_filter'] = trim((string) $this->input->get('learning_area', true));
         $data['term_filter'] = trim((string) $this->input->get('term', true));
         $data['competency_filter'] = trim((string) $this->input->get('competency', true));
         $data['has_record_filters'] = $data['division_filter'] > 0
+            || $data['district_filter'] > 0
+            || $data['proficiency_filter'] !== ''
             || $data['grade_filter'] !== ''
             || $data['learning_area_filter'] !== ''
             || $data['term_filter'] !== ''
@@ -1341,6 +1352,15 @@ class Pages extends CI_Controller
         // Build filter choices from this user's authorized scope before applying filters.
         $data['record_filter_options'] = array('grade_level' => array(), 'learning_area' => array(), 'term' => array());
         foreach ($data['records'] as $record) {
+            // Derive the descriptor from CPL so older records use the same ranges.
+            $record->proficiency_level = lg_proficiency_level($record->class_proficiency_level);
+            if ((int) $record->division_id > 0) {
+                $data['division_options'][(int) $record->division_id] = $record->division_name ?: 'Division ' . (int) $record->division_id;
+            }
+            if ((int) $record->district_id > 0) {
+                $data['district_divisions'][(int) $record->district_id] = (int) $record->division_id;
+                $data['district_options'][(int) $record->district_id] = ($record->district_name ?: 'District ' . (int) $record->district_id) . ' — ' . $record->division_name;
+            }
             foreach ($data['record_filter_options'] as $field => $options) {
                 $value = trim((string) $record->$field);
                 if ($value !== '') {
@@ -1352,6 +1372,14 @@ class Pages extends CI_Controller
             natcasesort($options);
         }
         unset($options);
+        natcasesort($data['division_options']);
+        natcasesort($data['district_options']);
+        if ($data['district_filter'] > 0 || $data['proficiency_filter'] !== '') {
+            $data['records'] = array_values(array_filter($data['records'], function ($record) use ($data) {
+                return ($data['district_filter'] === 0 || (int) $record->district_id === $data['district_filter'])
+                    && ($data['proficiency_filter'] === '' || $record->proficiency_level === $data['proficiency_filter']);
+            }));
+        }
         if ($data['division_filter'] > 0) {
             $data['records'] = array_values(array_filter($data['records'], function ($record) use ($data) {
                 return (int) $record->division_id === $data['division_filter'];
@@ -2005,12 +2033,11 @@ class Pages extends CI_Controller
         if (!$this->session->logged_in || $this->session->position !== 'school') {
             show_error('Only school accounts can request learning area options.', 403);
         }
-        $school = $this->Common->one_cond_row('schools', 'schoolID', $this->session->username);
         $grade = trim((string) $this->input->get('grade_level', true));
         $this->output->set_content_type('application/json')
             ->set_output(json_encode(array(
-                'areas' => $school && $grade !== ''
-                    ? $this->Page_model->learning_area_options((int) $school->division_id, $grade)
+                'areas' => $grade !== ''
+                    ? $this->Page_model->learning_area_options($grade)
                     : array()
             )));
     }

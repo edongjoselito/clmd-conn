@@ -1,6 +1,30 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+function lg_proficiency_levels()
+{
+    return array(
+        array('minimum' => 90, 'label' => 'Highly Proficient'),
+        array('minimum' => 75, 'label' => 'Proficient'),
+        array('minimum' => 50, 'label' => 'Nearly Proficient'),
+        array('minimum' => 25, 'label' => 'Low Proficient'),
+        array('minimum' => 0, 'label' => 'Not Proficient'),
+    );
+}
+
+function lg_proficiency_level($percentage)
+{
+    if (!is_numeric($percentage) || $percentage < 0 || $percentage > 100) {
+        return '';
+    }
+    foreach (lg_proficiency_levels() as $level) {
+        if ($percentage >= $level['minimum']) {
+            return $level['label'];
+        }
+    }
+    return '';
+}
+
 /**
  * Plain-language interpretations for the Learning Gap dashboards.
  * Every function returns a list of HTML-safe sentences for lg_interpretation_box().

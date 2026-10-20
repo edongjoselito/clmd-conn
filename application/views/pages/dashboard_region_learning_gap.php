@@ -132,7 +132,7 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
         <div class="col-xl-8">
             <section class="rd-card" aria-labelledby="rd-term-title">
                 <div class="rd-card-head">
-                    <h2 id="rd-term-title">Proficiency and gap rate by term</h2>
+                    <h2 id="rd-term-title">Proficiency and Gap Rate by Term</h2>
                     <span class="rd-tag"><i class="mdi mdi-chart-timeline-variant" aria-hidden="true"></i> CPL on <?= number_format($cpl_record_count); ?>/<?= number_format($record_count); ?> records</span>
                     <p>Gap rate is the sum of recorded gap counts divided by the sum of recorded assessed counts. Class proficiency level is weighted by assessed count across the records that carry a CPL value.</p>
                 </div>
@@ -149,7 +149,7 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
         <div class="col-xl-4">
             <section class="rd-card" aria-labelledby="rd-coverage-title">
                 <div class="rd-card-head">
-                    <h2 id="rd-coverage-title">Division reporting coverage</h2>
+                    <h2 id="rd-coverage-title">Division Reporting Coverage</h2>
                     <span class="rd-tag rd-tag-quiet rd-num"><?= $divisions_reporting; ?> / <?= $divisions_total; ?></span>
                 </div>
                 <div class="rd-card-body">
@@ -165,7 +165,7 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
 
             <section class="rd-card" aria-labelledby="rd-priority-title">
                 <div class="rd-card-head">
-                    <h2 id="rd-priority-title">Priority attention</h2>
+                    <h2 id="rd-priority-title">Priority Attention</h2>
                     <a class="rd-link" href="<?= $records_url; ?>">All records <i class="mdi mdi-arrow-right" aria-hidden="true"></i></a>
                     <p>Divisions carrying the largest recorded number of learners with gaps.</p>
                 </div>
@@ -199,7 +199,7 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
 
     <section class="rd-card" aria-labelledby="rd-division-chart-title">
         <div class="rd-card-head">
-            <h2 id="rd-division-chart-title">Proficiency and gap rate by division</h2>
+            <h2 id="rd-division-chart-title">Proficiency and Gap Rate by Division</h2>
             <span class="rd-tag rd-tag-quiet rd-num"><?= number_format($divisions_total); ?> division<?= $divisions_total === 1 ? '' : 's'; ?></span>
             <p>Both measures come from submitted records. Divisions without a CPL value are excluded from the proficiency bar and reported under coverage instead.</p>
         </div>
@@ -215,7 +215,7 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
 
     <section class="rd-card" aria-labelledby="rd-theme-title">
         <div class="rd-card-head">
-            <h2 id="rd-theme-title">Automated thematic analysis</h2>
+            <h2 id="rd-theme-title">Automated Thematic Analysis</h2>
             <span class="rd-tag"><i class="mdi mdi-auto-fix" aria-hidden="true"></i> Language-rule assisted</span>
             <p>Recurring themes detected in the intervention and remarks text that schools submitted with their records.</p>
         </div>
@@ -265,7 +265,7 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
 
     <section class="rd-card" aria-labelledby="rd-table-title">
         <div class="rd-card-head">
-            <h2 id="rd-table-title">Performance by division</h2>
+            <h2 id="rd-table-title">Performance by Division</h2>
             <div class="rd-filter">
                 <i class="mdi mdi-magnify" aria-hidden="true"></i>
                 <input type="search" id="rdDivisionFilter" placeholder="Filter divisions" aria-label="Filter divisions by name" autocomplete="off">
@@ -353,6 +353,10 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
 </div>
 
 <script src="<?= base_url('assets/libs/chart-js/Chart.bundle.min.js'); ?>"></script>
+<script src="<?= base_url('assets/libs/jszip/jszip.min.js'); ?>"></script>
+<script src="<?= base_url('assets/libs/pdfmake/pdfmake.min.js'); ?>"></script>
+<script src="<?= base_url('assets/libs/pdfmake/vfs_fonts.js'); ?>"></script>
+<script src="<?= base_url('assets/js/chart-exports.js'); ?>?v=<?= filemtime(FCPATH . 'assets/js/chart-exports.js'); ?>"></script>
 <script>
     (function () {
         var NAVY = '#3b0718';
@@ -408,7 +412,7 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
 
         var termCanvas = document.getElementById('rdTermChart');
         if (typeof Chart !== 'undefined' && termCanvas && hasData(termRows)) {
-            new Chart(termCanvas.getContext('2d'), {
+            var termChart = new Chart(termCanvas.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: termRows.map(function (row) { return row.term; }),
@@ -475,7 +479,7 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
         /* ---------- Per-division chart ---------- */
         var divisionCanvas = document.getElementById('rdDivisionChart');
         if (typeof Chart !== 'undefined' && divisionCanvas && hasData(divisionRows)) {
-            new Chart(divisionCanvas.getContext('2d'), {
+            var divisionChart = new Chart(divisionCanvas.getContext('2d'), {
                 type: 'horizontalBar',
                 data: {
                     labels: divisionRows.map(function (row) { return row.division; }),
@@ -526,6 +530,15 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
         } else {
             showEmpty('rdDivisionChart', 'rdDivisionEmpty');
         }
+
+        var exportContext = 'Fiscal Year <?= (int) $this->session->fy; ?>';
+        function exportRows(rows, key, heading) {
+            return [[heading, 'Class proficiency level (%)', 'Recorded gap rate (%)', 'Recorded assessed count']].concat(rows.map(function (row) {
+                return [row[key], row.cpl, row.gapPercentage, row.assessed];
+            }));
+        }
+        if (termChart) addChartExports(termChart, document.getElementById('rd-term-title').textContent, exportContext, exportRows(termRows, 'term', 'Term'));
+        if (divisionChart) addChartExports(divisionChart, document.getElementById('rd-division-chart-title').textContent, exportContext, exportRows(divisionRows, 'division', 'Division'));
 
         /* ---------- Division table: filter and sort ---------- */
         var table = document.getElementById('rdDivisionTable');

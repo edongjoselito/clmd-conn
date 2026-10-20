@@ -132,7 +132,7 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
                 <div class="col-md-3 form-group"><label>Learning Area / Subject *</label><select name="learning_area" id="learningArea" class="custom-select" required disabled><option value="">Select grade level first</option></select></div>
                 <div class="col-md-2 form-group"><label>Trimester *</label><select name="term" id="term" class="custom-select" required><option value="">Select trimester</option><?php foreach (array('Term 1','Term 2','Term 3') as $term): ?><option value="<?= $term; ?>" <?= $value('term') === $term ? 'selected' : ''; ?>><?= $term; ?></option><?php endforeach; ?></select></div>
                 <div class="col-md-2 form-group"><label>Class Proficiency Level</label><div class="input-group"><input type="number" min="0" max="100" step="0.01" name="class_proficiency_level" class="form-control" value="<?= html_escape($value('class_proficiency_level')); ?>"><div class="input-group-append"><span class="input-group-text">%</span></div></div></div>
-                <div class="col-md-3 form-group"><label>Proficiency Level</label><select name="proficiency_level" class="custom-select"><option value="">Select level</option><?php foreach (array('Beginning','Developing','Approaching Proficient','Proficient','Advanced') as $proficiency_level): ?><option value="<?= $proficiency_level; ?>" <?= $value('proficiency_level') === $proficiency_level ? 'selected' : ''; ?>><?= $proficiency_level; ?></option><?php endforeach; ?></select></div>
+                <div class="col-md-3 form-group"><label for="proficiencyLevel">Proficiency Level</label><input type="text" name="proficiency_level" id="proficiencyLevel" class="form-control" value="<?= html_escape(lg_proficiency_level($value('class_proficiency_level'))); ?>" placeholder="Calculated from CPL" readonly></div>
                 <div class="col-12 form-group"><label>Least Learned Competency *</label><div id="learningCompetencies" class="competency-options"><p class="text-muted">Select grade level, learning area, and term first</p></div><small class="form-text text-muted">Check one or more competencies that were least learned.</small></div>
             </div>
             <?php if (!empty($summative_cpl_enabled)): ?>
@@ -278,6 +278,24 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
         var selectedArea = <?= json_encode($value('learning_area')); ?>;
         var selectedCompetencies = <?= json_encode(array_filter(preg_split('/\r\n|\r|\n/', $value('least_learned_competency')))); ?>;
         if (!assessed || !withGap || !preview) return;
+        var classProficiency = document.querySelector('[name="class_proficiency_level"]');
+        var proficiencyLevel = document.getElementById('proficiencyLevel');
+        var proficiencyLevels = <?= json_encode(lg_proficiency_levels()); ?>;
+        function updateProficiency() {
+            var raw = classProficiency.value.trim();
+            var percentage = Number(raw);
+            proficiencyLevel.value = '';
+            if (raw === '' || !Number.isFinite(percentage) || percentage < 0 || percentage > 100) return;
+            for (var i = 0; i < proficiencyLevels.length; i++) {
+                if (percentage >= proficiencyLevels[i].minimum) {
+                    proficiencyLevel.value = proficiencyLevels[i].label;
+                    break;
+                }
+            }
+        }
+        classProficiency.addEventListener('input', updateProficiency);
+        classProficiency.addEventListener('change', updateProficiency);
+        updateProficiency();
         function updateRate() {
             var total = Number(assessed.value) || 0;
             var gap = Number(withGap.value) || 0;
