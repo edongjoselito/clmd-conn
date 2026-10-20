@@ -2565,7 +2565,7 @@ public function learning_gap_division_performance($region_id)
 public function learning_gap_division_summary($region_id)
 {
     $this->ensure_learning_gap_archive_schema();
-    $this->db->select('d.id AS division_id, d.description AS division_name, COUNT(lgr.id) AS record_count, COUNT(DISTINCT lgr.school_id) AS school_count, (SELECT COUNT(*) FROM schools school_totals WHERE school_totals.division_id = d.id) AS total_school_count, COALESCE(SUM(lgr.learners_assessed), 0) AS learners_assessed, COALESCE(SUM(lgr.learners_with_gap), 0) AS learners_with_gap')
+    $this->db->select('d.id AS division_id, d.description AS division_name, COUNT(lgr.id) AS record_count, COUNT(DISTINCT lgr.school_id) AS school_count, COUNT(DISTINCT lgr.grade_level) AS grade_level_count, COUNT(DISTINCT lgr.learning_area) AS learning_area_count, (SELECT COUNT(*) FROM schools school_totals WHERE school_totals.division_id = d.id) AS total_school_count, COALESCE(SUM(lgr.learners_assessed), 0) AS learners_assessed, COALESCE(SUM(lgr.learners_with_gap), 0) AS learners_with_gap')
         ->from('division d')
         ->join('learning_gap_records lgr', 'lgr.division_id = d.id AND lgr.fiscal_year = ' . (int) $this->learning_gap_year(), 'left')
         ->where('d.region_id', (int) $region_id)

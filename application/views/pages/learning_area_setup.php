@@ -44,7 +44,6 @@ foreach ($divisions as $division) {
         break;
     }
 }
-$setup_url = base_url('Pages/learning_area_setup');
 ?>
 <link rel="stylesheet" href="<?= base_url('assets/css/learning-area-setup.css'); ?>?v=<?= filemtime(FCPATH . 'assets/css/learning-area-setup.css'); ?>">
 
@@ -60,19 +59,6 @@ $setup_url = base_url('Pages/learning_area_setup');
             </p>
         </div>
     </header>
-
-    <form class="la-switcher" method="get" action="<?= $setup_url; ?>">
-        <div class="la-switcher-field">
-            <label for="division_id">Division</label>
-            <select id="division_id" name="division_id" class="custom-select" onchange="this.form.submit()">
-                <?php foreach ($divisions as $division) : ?>
-                    <option value="<?= (int) $division->id; ?>" <?= (int) $selected_division_id === (int) $division->id ? 'selected' : ''; ?>><?= html_escape($division->description); ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <button class="btn btn-outline-primary" type="submit">View division</button>
-        <p class="la-switcher-note">Learning areas are configured per division. Competencies encoded against an area are shared across the region.</p>
-    </form>
 
     <?php if ($this->session->flashdata('success')) : ?>
         <div class="la-flash la-flash-success" role="status"><i class="mdi mdi-check-circle-outline" aria-hidden="true"></i><span><?= $this->session->flashdata('success'); ?></span></div>

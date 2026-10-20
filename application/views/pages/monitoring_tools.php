@@ -11,18 +11,26 @@ $open_editor = $edit || is_array($previous);
     <?php foreach (array('success', 'danger') as $type): ?>
         <?php if ($message = $this->session->flashdata($type)): ?><div class="alert alert-<?= $type; ?>" role="alert"><?= html_escape($message); ?></div><?php endif; ?>
     <?php endforeach; ?>
-    <section class="card"><div class="card-body"><h2>Available tools</h2>
-            <div class="table-responsive"><table class="table"><thead><tr><th>Tool name</th><th>Actions</th></tr></thead><tbody>
+    <section class="card"><div class="card-body"><h2>Available Tools</h2>
+            <div class="table-responsive"><table class="table"><thead><tr><th>Tool Name</th><th>Actions</th></tr></thead><tbody>
             <?php foreach ($tools as $tool): ?><tr>
                 <td><a href="<?= base_url(($list_path === 'monitoring/tool' ? 'monitoring/tool?tool_id=' : 'monitoring-tool/settings/indicators?tool_id=') . (int) $tool->id); ?>"><?= html_escape($tool->name); ?></a></td>
-                <td><div class="d-flex flex-wrap" style="gap: 8px">
-                    <a class="btn btn-sm btn-primary" href="<?= base_url('monitoring-tool/settings/indicators?tool_id=' . (int) $tool->id); ?>">Indicators</a>
-                    <a class="btn btn-sm btn-outline-primary" href="<?= base_url('monitoring/tool?tool_id=' . (int) $tool->id); ?>">View tool</a>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#tool-editor" data-tool-id="<?= (int) $tool->id; ?>" data-tool-name="<?= html_escape($tool->name); ?>">Edit</button>
-                    <?= form_open('Pages/monitoring_tool_delete', array('onsubmit' => "return confirm('Remove this monitoring tool and its indicators from use? Saved assessments will remain available.');")); ?>
-                    <input type="hidden" name="return_to" value="<?= html_escape($list_path); ?>">
-                    <input type="hidden" name="id" value="<?= (int) $tool->id; ?>"><button class="btn btn-sm btn-outline-danger" type="submit">Delete</button><?= form_close(); ?>
-                </div></td>
+                <td>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="tool-actions-<?= (int) $tool->id; ?>" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Actions</button>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="tool-actions-<?= (int) $tool->id; ?>">
+                            <a class="dropdown-item" href="<?= base_url('monitoring-tool/settings/indicators?tool_id=' . (int) $tool->id); ?>">Indicators</a>
+                            <a class="dropdown-item" href="<?= base_url('monitoring/tool?tool_id=' . (int) $tool->id); ?>">View tool</a>
+                            <button type="button" class="dropdown-item" data-toggle="modal" data-target="#tool-editor" data-tool-id="<?= (int) $tool->id; ?>" data-tool-name="<?= html_escape($tool->name); ?>">Edit</button>
+                            <div class="dropdown-divider"></div>
+                            <?= form_open('Pages/monitoring_tool_delete', array('class' => 'mb-0', 'onsubmit' => "return confirm('Remove this monitoring tool and its indicators from use? Saved assessments will remain available.');")); ?>
+                            <input type="hidden" name="return_to" value="<?= html_escape($list_path); ?>">
+                            <input type="hidden" name="id" value="<?= (int) $tool->id; ?>">
+                            <button class="dropdown-item text-danger" type="submit">Delete</button>
+                            <?= form_close(); ?>
+                        </div>
+                    </div>
+                </td>
             </tr><?php endforeach; ?>
             <?php if (!$tools): ?><tr><td colspan="2">No monitoring tools yet. Add a tool to get started.</td></tr><?php endif; ?>
             </tbody></table></div>
