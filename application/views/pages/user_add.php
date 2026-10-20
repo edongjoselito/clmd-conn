@@ -648,8 +648,8 @@ $position_count = !empty($pos) ? count($pos) : 0;
 
                         <div class="user-create-scope">
                             <?= $is_division_scope
-                                ? 'Division and ICT managers can only create accounts within their assigned division.'
-                                : ($this->session->position === 'region' ? 'Regional managers can create accounts within their region, including division users. Division is required for division, district, and school roles; district is required for district and school roles.' : 'Administrators can create accounts across available divisions and positions.'); ?>
+                                ? 'Division and ICT managers can only create accounts within their assigned division. Learning Area Coordinator accounts are limited to that division.'
+                                : ($this->session->position === 'region' ? 'Regional managers can create accounts within their region. Assign a division to a Learning Area Coordinator for division access, or leave Division unselected for regional access. Division is required for division, district, and school roles; district is required for district and school roles.' : 'Administrators can create accounts across available divisions and positions.'); ?>
                         </div>
                     </div>
                 </div>

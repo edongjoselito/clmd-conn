@@ -46,6 +46,7 @@ class Pages extends CI_Controller
             // Scope dashboards. Each role reaches only its own level; the site
             // root dispatches users here so the URL names the scope on screen.
             'region' => array('region'),
+            'regional_learning_area_dashboard' => array('region'),
             'division' => array('division', 'division_head', 'ict'),
             'district' => array('district'),
             'school_dashboard' => array('school'),
@@ -739,14 +740,26 @@ class Pages extends CI_Controller
         }
         if ($this->session->position === 'region') {
             if ($position === 'admin') { return false; }
-            $this->config->load('learning_area_dashboards');
-            $areas = $this->config->item('learning_area_dashboards');
-            return isset($areas[substr((string) $position, 3)]) && strpos((string) $position, 'la_') === 0
+            return $this->is_learning_area_position($position)
                 || (bool) $this->Page_model->one_cond_row('position', 'pos', $position);
+        }
+        if ($this->is_division_user_manager() && $this->is_learning_area_position($position)) {
+            return true;
         }
         $position_record = $this->Page_model->one_cond_row('position', 'pos', $position);
 
         return $position_record && !in_array($position, array('admin', 'region', 'division'), true);
+    }
+
+    private function is_learning_area_position($position)
+    {
+        $position = (string) $position;
+        if (strpos($position, 'la_') !== 0) {
+            return false;
+        }
+        $this->config->load('learning_area_dashboards');
+        $areas = $this->config->item('learning_area_dashboards');
+        return isset($areas[substr($position, 3)]);
     }
 
     private function validate_managed_district($district_id)
@@ -996,6 +1009,9 @@ class Pages extends CI_Controller
         if ($role === 'region' && (int) $this->session->region <= 0) {
             show_error('Your account has no assigned region.', 403);
         }
+        if ($reader && (int) $this->session->region <= 0) {
+            show_error('Your learning-area account has no assigned region.', 403);
+        }
         $this->load->model('Focal_person_model');
         $this->Focal_person_model->initialize();
     }
@@ -1004,17 +1020,20 @@ class Pages extends CI_Controller
     {
         $this->focal_person_access();
         $can_manage = $this->session->position === 'region';
-        $region = $can_manage ? (int) $this->session->region : null;
+        $region = (int) $this->session->region;
         $areas = $this->config->item('learning_area_dashboards');
         // Learning-area scope is locked to the authenticated role, not query input.
         $area = $can_manage ? (string) $this->input->get('learning_area', true) : substr($this->session->position, 3);
         if ($area !== '' && !isset($areas[$area])) { show_error('Invalid learning area.', 400); }
-        $division_id = $can_manage ? max(0, (int) $this->input->get('division_id')) : 0;
+        $division_id = $can_manage
+            ? max(0, (int) $this->input->get('division_id'))
+            : max(0, (int) $this->session->division);
         $divisions = $can_manage
             ? $this->db->where('region_id', $region)->order_by('description')->get('division')->result()
             : array();
         $this->render_dashboard('focal_persons', array(
             'can_manage' => $can_manage, 'areas' => $areas, 'selected_area' => $area,
+            'division_scoped' => !$can_manage && $division_id > 0,
             'divisions' => $divisions, 'selected_division' => $division_id,
             'people' => $this->Focal_person_model->directory($region, $area, $division_id),
         ));
@@ -1080,9 +1099,56 @@ class Pages extends CI_Controller
         if ($this->session->position !== 'la_' . $slug) {
             show_error('You are not authorized to view this learning area.', 403);
         }
+        $division_id = max(0, (int) $this->session->division);
+        $region_id = (int) $this->session->region;
+        if ($region_id <= 0) {
+            show_error('Your learning-area account has no assigned region.', 403);
+        }
+        $division = null;
+        if ($division_id > 0) {
+            $division = $this->db->where('id', $division_id)
+                ->where('region_id', $region_id)->get('division')->row();
+            if (!$division) {
+                show_error('Your learning-area account has no valid division assignment.', 403);
+            }
+        }
         $scope = array('type' => 'learning_area', 'id' => $slug);
         $this->render_dashboard('dashboard_learning_area', array(
             'area' => $areas[$slug],
+            'regional_dashboard' => $division_id === 0,
+            'regional_dashboard_origin' => false,
+            'scope_label' => $division ? $division->description : 'Regional · All divisions',
+            'summary' => $this->Page_model->learning_gap_summary($scope),
+            'terms' => $this->Page_model->learning_gap_term_performance($scope),
+            'records' => $this->Page_model->learning_gap_records($scope),
+        ));
+    }
+
+    public function regional_learning_area_dashboard($slug = '')
+    {
+        $this->config->load('learning_area_dashboards');
+        $areas = $this->config->item('learning_area_dashboards');
+        if (!isset($areas[$slug])) {
+            show_404();
+            return;
+        }
+
+        $region_id = (int) $this->session->region;
+        if ($region_id <= 0) {
+            show_error('Your account has no assigned region.', 403);
+            return;
+        }
+
+        $scope = array(
+            'type' => 'region_learning_area',
+            'id' => $region_id,
+            'aliases' => $areas[$slug]['aliases'],
+        );
+        $this->render_dashboard('dashboard_learning_area', array(
+            'area' => $areas[$slug],
+            'regional_dashboard' => true,
+            'regional_dashboard_origin' => true,
+            'scope_label' => 'Regional · All divisions',
             'summary' => $this->Page_model->learning_gap_summary($scope),
             'terms' => $this->Page_model->learning_gap_term_performance($scope),
             'records' => $this->Page_model->learning_gap_records($scope),
@@ -1091,7 +1157,10 @@ class Pages extends CI_Controller
 
     public function region()
     {
-        $this->render_dashboard('dashboard_region_learning_gap', $this->region_scope_data());
+        $this->config->load('learning_area_dashboards');
+        $data = $this->region_scope_data();
+        $data['learning_area_dashboards'] = $this->config->item('learning_area_dashboards');
+        $this->render_dashboard('dashboard_region_learning_gap', $data);
     }
 
     public function division()
@@ -2633,7 +2702,8 @@ class Pages extends CI_Controller
             $data['division'] = $this->Page_model->one_cond('division', 'region_id', $this->session->position === 'region' ? (int) $this->session->region : 12);
             if ($this->session->position === 'region') {
                 $data['pos'] = array_values(array_filter($this->Page_model->no_cond('position'), function ($position) {
-                    return $this->is_allowed_managed_position($position->pos);
+                    return !$this->is_learning_area_position($position->pos)
+                        && $this->is_allowed_managed_position($position->pos);
                 }));
                 $this->config->load('learning_area_dashboards');
                 foreach ($this->config->item('learning_area_dashboards') as $slug => $area) {
@@ -2649,9 +2719,14 @@ class Pages extends CI_Controller
                 $data['pos'] = array_values(array_filter(
                     $this->Page_model->no_cond('position'),
                     function ($position) {
-                        return $this->is_allowed_managed_position($position->pos);
+                        return !$this->is_learning_area_position($position->pos)
+                            && $this->is_allowed_managed_position($position->pos);
                     }
                 ));
+                $this->config->load('learning_area_dashboards');
+                foreach ($this->config->item('learning_area_dashboards') as $slug => $area) {
+                    $data['pos'][] = (object) array('pos' => 'la_' . $slug, 'description' => $area['name'] . ' Division Coordinator');
+                }
                 $data['districts'] = $this->Page_model->one_cond('district', 'division_id', $this->session->division);
             }else{
                 $data['pos'] = $this->Page_model->no_cond('position');  

@@ -66,6 +66,7 @@ $route['lock_user_screen'] = 'pages/lock_user_screen';
 // dashboard URL names the scope it shows. Access is enforced by $role_policies
 // in Pages::__construct(); admin is deliberately served at the root instead.
 $route['region'] = 'pages/region';
+$route['region/learning-area/(:any)'] = 'pages/regional_learning_area_dashboard/$1';
 $route['division'] = 'pages/division';
 $route['district'] = 'pages/district';
 // Bare 'school' is the dashboard; 'school/<id>' remains the school profile.

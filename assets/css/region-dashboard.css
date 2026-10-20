@@ -65,6 +65,42 @@
 .rd-header-actions .btn-light { color: var(--rd-navy); }
 .rd-header-actions .btn-outline-light { border-color: rgba(255, 255, 255, .55); }
 
+/* ---------- Learning-area dashboard links ---------- */
+.rd-area-shortcuts { margin-bottom: 20px; }
+.rd-area-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 10px;
+    padding: 18px 22px 22px;
+}
+.rd-area-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 13px;
+    border: 1px solid var(--rd-line);
+    border-radius: 10px;
+    color: var(--rd-ink);
+    transition: border-color .15s ease, background .15s ease;
+}
+.rd-area-link:hover { border-color: #d8b2bc; background: #fdf9fa; color: var(--rd-navy); text-decoration: none; }
+.rd-area-link-icon {
+    display: inline-flex;
+    flex: 0 0 36px;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--rd-sky);
+    color: var(--rd-blue);
+    font-size: 18px;
+}
+.rd-area-link strong { display: block; font-size: 13px; line-height: 1.4; }
+.rd-area-link small { display: block; margin-top: 3px; color: var(--rd-muted); font-size: 11px; }
+.rd-area-link small i { margin-left: 3px; }
+
 /* ---------- Metric tiles ---------- */
 .rd-metrics {
     display: grid;

@@ -1,11 +1,12 @@
 <?php $assessed = (int) $summary->learners_assessed; $gap = (int) $summary->learners_with_gap; ?>
 <main class="area-dashboard" aria-labelledby="area-title">
+    <?php if (!empty($regional_dashboard_origin)) : ?><p><a href="<?= base_url('region'); ?>">&larr; Regional dashboard</a></p><?php endif; ?>
     <section class="area-hero">
         <div class="area-hero-copy">
-            <span class="area-eyebrow">CLMD · LEARNING AREA MONITORING</span>
+            <span class="area-eyebrow"><?= !empty($regional_dashboard) ? 'CLMD · REGIONAL LEARNING AREA MONITORING' : 'CLMD · DIVISION LEARNING AREA MONITORING'; ?></span>
             <h1 id="area-title"><?= html_escape($area['name']); ?></h1>
-            <p>Learning gaps, school progress, and interventions. Your subject at a glance.</p>
-            <div class="area-hero-meta"><span><i class="mdi mdi-calendar-outline" aria-hidden="true"></i> Fiscal Year <?= (int) $this->session->fy; ?></span><span><i class="mdi mdi-map-marker-outline" aria-hidden="true"></i> All divisions</span></div>
+            <p><?= !empty($regional_dashboard) ? 'Learning gaps, school progress, and interventions across all divisions in your region.' : 'Learning gaps, school progress, and interventions. Your subject at a glance.'; ?></p>
+            <div class="area-hero-meta"><span><i class="mdi mdi-calendar-outline" aria-hidden="true"></i> Fiscal Year <?= (int) $this->session->fy; ?></span><span><i class="mdi mdi-map-marker-outline" aria-hidden="true"></i> <?= html_escape($scope_label); ?></span></div>
         </div>
         <a href="#school-submissions" class="btn area-hero-action">View submissions <span aria-hidden="true">↗</span></a>
     </section>
@@ -33,7 +34,7 @@
         <td><?= nl2br(html_escape($record->least_learned_competency)); ?></td><td><?= nl2br(html_escape($record->intervention_action ?? '')); ?></td><td><?= html_escape($record->intervention_status ?: 'Not specified'); ?></td>
     </tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
     </div></section>
-    <details class="card area-account"<?= ($this->session->flashdata('success') || $this->session->flashdata('danger')) ? ' open' : ''; ?>><summary>Account security <span>Change your password</span></summary><div class="card-body"><h4>Change Account Password</h4>
+    <?php if (strpos((string) $this->session->position, 'la_') === 0) : ?><details class="card area-account"<?= ($this->session->flashdata('success') || $this->session->flashdata('danger')) ? ' open' : ''; ?>><summary>Account security <span>Change your password</span></summary><div class="card-body"><h4>Change Account Password</h4>
         <?php if ($this->session->flashdata('success')): ?><p class="alert alert-success"><?= html_escape($this->session->flashdata('success')); ?></p><?php endif; ?>
         <?php if ($this->session->flashdata('danger')): ?><p class="alert alert-danger"><?= html_escape($this->session->flashdata('danger')); ?></p><?php endif; ?>
         <?= form_open('Pages/change_password_user'); ?>
@@ -42,5 +43,5 @@
         <div class="col-md-4 form-group"><label for="areaNewPassword">New password</label><input class="form-control" type="password" id="areaNewPassword" name="password" autocomplete="new-password" minlength="8" maxlength="128" required></div>
         <div class="col-md-4 form-group"><label for="areaConfirmPassword">Confirm password</label><input class="form-control" type="password" id="areaConfirmPassword" name="password_confirm" autocomplete="new-password" minlength="8" maxlength="128" required></div>
         </div><button type="submit" class="btn btn-primary">Change password</button><?= form_close(); ?>
-    </div></details>
+    </div></details><?php endif; ?>
 </main>

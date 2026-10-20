@@ -1,6 +1,6 @@
 <link rel="stylesheet" href="<?= base_url('assets/css/focal-persons.css'); ?>">
 <section class="focal-directory">
-    <header class="focal-heading"><div><span class="focal-eyebrow">CLMD DIRECTORY</span><h1>Focal Persons</h1><p><?= $can_manage ? 'Manage focal persons across the divisions in your region.' : 'View all focal persons for your learning area across all divisions and regions.'; ?></p></div>
+    <header class="focal-heading"><div><span class="focal-eyebrow">CLMD DIRECTORY</span><h1>Focal Persons</h1><p><?= $can_manage ? 'Manage focal persons across the divisions in your region.' : ($division_scoped ? 'View focal persons for your learning area in your assigned division.' : 'View focal persons for your learning area across all divisions in your region.'); ?></p></div>
     <?php if ($can_manage): ?><a class="btn btn-primary" href="<?= base_url('focal-persons/new'); ?>">+ Add Focal Person</a><?php else: ?><span class="badge badge-light p-2">View only</span><?php endif; ?></header>
     <?php if ($this->session->flashdata('success')): ?><div class="alert alert-success" role="status"><?= html_escape($this->session->flashdata('success')); ?></div><?php endif; ?>
     <?php if ($can_manage): ?>

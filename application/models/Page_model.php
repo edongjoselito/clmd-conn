@@ -2155,8 +2155,18 @@ private function apply_learning_gap_scope($scope, $alias = 'lgr')
         if (!isset($areas[$slug])) {
             show_error('No learning area is assigned to this account.', 403);
         }
+        $region_id = (int) $this->session->region;
+        $division_id = (int) $this->session->division;
+        if ($region_id <= 0) {
+            show_error('Your learning-area account has no assigned region.', 403);
+            return;
+        }
         $prefix = $alias === '' ? '' : $alias . '.';
-        $this->db->where_in($prefix . 'learning_area', $areas[$slug]['aliases']);
+        $this->db->where($prefix . 'region_id', $region_id)
+            ->where_in($prefix . 'learning_area', $areas[$slug]['aliases']);
+        if ($division_id > 0) {
+            $this->db->where($prefix . 'division_id', $division_id);
+        }
         return;
     }
     // District accounts must never receive a wider scope from a caller.
@@ -2185,6 +2195,14 @@ private function apply_learning_gap_scope($scope, $alias = 'lgr')
         $this->db->where($prefix . 'division_id', $scope['id']);
     } elseif ($scope['type'] === 'region' && (int) $scope['id'] > 0) {
         $this->db->where($prefix . 'region_id', $scope['id']);
+    } elseif ($scope['type'] === 'region_learning_area') {
+        $aliases = isset($scope['aliases']) ? array_values(array_unique(array_filter($scope['aliases'], 'is_string'))) : array();
+        if ((int) $scope['id'] <= 0 || empty($aliases)) {
+            show_error('The regional learning-area scope is invalid.', 403);
+            return;
+        }
+        $this->db->where($prefix . 'region_id', (int) $scope['id'])
+            ->where_in($prefix . 'learning_area', $aliases);
     }
 }
 
