@@ -175,6 +175,31 @@
 .rec-list { margin: 0; padding: 0; list-style: none; }
 .rec-item { border-top: 1px solid #edf3f8; }
 .rec-list > .rec-item:first-child { border-top: none; }
+.rec-district-group { border-top: 1px solid var(--rec-line); }
+.rec-district-group:first-child { border-top: 0; }
+.rec-district-group > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 22px;
+    color: var(--rec-navy);
+    background: #fbf4f5;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+}
+.rec-district-group > summary::-webkit-details-marker { display: none; }
+.rec-district-group > summary::before {
+    content: "\F140";
+    margin-right: 2px;
+    font-family: "Material Design Icons";
+    color: var(--rec-blue);
+    transition: transform .15s ease;
+}
+.rec-district-group[open] > summary::before { transform: rotate(180deg); }
+.rec-district-group > summary > span:first-of-type { flex: 1; }
+.rec-district-group > summary:hover { background: #f7eaed; }
 .rec-item-main {
     display: grid;
     grid-template-columns: minmax(0, 2.4fr) repeat(3, minmax(88px, .8fr)) auto;

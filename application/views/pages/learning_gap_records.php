@@ -27,11 +27,32 @@ $learners_assessed = 0;
 $learners_with_gap = 0;
 $school_ids = array();
 $area_pairs = array();
+$group_records_by_district = $division_filter > 0;
+$record_groups = array();
 foreach ($records as $row) {
     $learners_assessed += (int) $row->learners_assessed;
     $learners_with_gap += (int) $row->learners_with_gap;
     $school_ids[(string) $row->school_id] = true;
     $area_pairs[$row->grade_level . '|' . $row->learning_area] = true;
+    if ($group_records_by_district) {
+        $district_id = (int) $row->district_id;
+        $group_key = $district_id > 0 ? 'district-' . $district_id : 'unassigned';
+        if (!isset($record_groups[$group_key])) {
+            $district_name = trim((string) $row->district_name);
+            $record_groups[$group_key] = array(
+                'name' => $district_name !== '' ? $district_name : ($district_id > 0 ? 'District ' . $district_id : 'Unassigned District'),
+                'records' => array(),
+            );
+        }
+        $record_groups[$group_key]['records'][] = $row;
+    }
+}
+if ($group_records_by_district) {
+    uasort($record_groups, function ($left, $right) {
+        return strnatcasecmp($left['name'], $right['name']);
+    });
+} else {
+    $record_groups[] = array('name' => '', 'records' => $records);
 }
 $gap_rate = $learners_assessed > 0 ? ($learners_with_gap / $learners_assessed) * 100 : 0;
 /* A school only ever sees its own rows, so a school count would always read 1.
@@ -191,8 +212,13 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
                 <?php endif; ?>
             </div>
         <?php else : ?>
-            <ul class="rec-list">
-                <?php foreach ($records as $row) : ?>
+            <?php foreach ($record_groups as $record_group) : ?>
+                <?php if ($group_records_by_district) : ?>
+                    <details class="rec-district-group">
+                        <summary><span><?= html_escape($record_group['name']); ?></span><span class="rec-count"><?= number_format(count($record_group['records'])); ?> record<?= count($record_group['records']) === 1 ? '' : 's'; ?></span></summary>
+                <?php endif; ?>
+                <ul class="rec-list">
+                <?php foreach ($record_group['records'] as $row) : ?>
                     <?php
                     $status = $row->intervention_status ?: 'Not set';
                     $status_class = isset($status_styles[$status]) ? $status_styles[$status] : 'unset';
@@ -286,7 +312,9 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
                         </details>
                     </li>
                 <?php endforeach; ?>
-            </ul>
+                </ul>
+                <?php if ($group_records_by_district) : ?></details><?php endif; ?>
+            <?php endforeach; ?>
         <?php endif; ?>
     </section>
 </div>

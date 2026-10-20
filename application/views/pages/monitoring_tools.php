@@ -11,8 +11,8 @@ $open_editor = $edit || is_array($previous);
     <?php foreach (array('success', 'danger') as $type): ?>
         <?php if ($message = $this->session->flashdata($type)): ?><div class="alert alert-<?= $type; ?>" role="alert"><?= html_escape($message); ?></div><?php endif; ?>
     <?php endforeach; ?>
-    <section class="card"><div class="card-body"><h2>Available Tools</h2>
-            <div class="table-responsive"><table class="table"><thead><tr><th>Tool Name</th><th>Actions</th></tr></thead><tbody>
+    <section class="card mi-tools-list"><div class="card-body"><h2>Available Tools</h2>
+            <table class="table"><thead><tr><th>Tool Name</th><th>Actions</th></tr></thead><tbody>
             <?php foreach ($tools as $tool): ?><tr>
                 <td><a href="<?= base_url(($list_path === 'monitoring/tool' ? 'monitoring/tool?tool_id=' : 'monitoring-tool/settings/indicators?tool_id=') . (int) $tool->id); ?>"><?= html_escape($tool->name); ?></a></td>
                 <td>
@@ -33,7 +33,7 @@ $open_editor = $edit || is_array($previous);
                 </td>
             </tr><?php endforeach; ?>
             <?php if (!$tools): ?><tr><td colspan="2">No monitoring tools yet. Add a tool to get started.</td></tr><?php endif; ?>
-            </tbody></table></div>
+            </tbody></table>
         </div></section>
 </div>
 <div class="modal fade" id="tool-editor" tabindex="-1" role="dialog" aria-labelledby="tool-editor-title" aria-hidden="true" data-open-editor="<?= $open_editor ? '1' : '0'; ?>">

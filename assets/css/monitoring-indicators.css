@@ -8,6 +8,8 @@
 .mi-summary span { padding: 14px 20px; background: #fff; border: 1px solid #ead7dc; border-radius: 10px; }
 .mi-summary strong { color: #800020; margin-right: 8px; font-size: 22px; }
 .mi-page .card { border: 1px solid #ead7dc; border-radius: 12px; overflow: hidden; }
+.mi-page .mi-tools-list.card { overflow: visible; }
+.mi-tools-list .dropdown.show { z-index: 1050; }
 .mi-page h2 { font-size: 16px; color: #3b0718; line-height: 1.5; }
 .mi-area .card-header { background: #fbf0f3; border-bottom: 1px solid #ead7dc; }
 .mi-area .card-header h2 { margin: 0 0 4px; }
