@@ -198,8 +198,18 @@ $checklist_url = base_url() . 'Pages/sbm_checklist';
 $ta_url = base_url() . 'Pages/tapr_form';
 $tana_url = base_url() . 'Pages/tana_form';
 $tana_summary_url = base_url() . 'Pages/tana_summary';
+$phil_iri_url = base_url() . 'Pages/phil_iri';
 
 $workflow_cards = array(
+    array(
+        'title' => 'Phil-IRI Reading Results',
+        'icon' => 'mdi-book-open-page-variant-outline',
+        'status' => 'Data entry',
+        'state_class' => 'state-empty',
+        'summary' => 'Record school reading results by applicable grade, language, and assessment period.',
+        'url' => $phil_iri_url,
+        'cta' => 'Enter Phil-IRI results',
+    ),
     array(
         'title' => 'School Profile',
         'icon' => 'mdi-school-outline',

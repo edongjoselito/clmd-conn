@@ -265,6 +265,7 @@ $is_dashboard = in_array($dashboard_method, array('view', 'region', 'division', 
                         <?php if ($this->session->position == 'school') { ?>
 
                             <li><a href="<?= base_url(); ?>Pages/learning_gap" class="waves-effect"><i class="fas fa-chart-bar"></i><span> Learning Gap Monitoring</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/phil_iri" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Phil-IRI Data Entry</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_records" class="waves-effect"><i class="fas fa-list"></i><span> My Learning Gap Records</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_archives" class="waves-effect"><i class="mdi mdi-archive"></i><span> Archived Records</span></a></li>
 
@@ -327,6 +328,7 @@ $is_dashboard = in_array($dashboard_method, array('view', 'region', 'division', 
                         <?php if ($this->session->position == 'region') { ?>
 
                             <li><a href="<?= base_url(); ?>Pages/learning_gap" class="waves-effect"><i class="fas fa-chart-bar"></i><span> Learning Gap Overview</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/regional_phil_iri_report" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Phil-IRI Regional Report</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="fas fa-school"></i><span> Learning Gap Summary</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_records" class="waves-effect"><i class="fas fa-list"></i><span> Submitted Learning Gap</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_archives" class="waves-effect"><i class="mdi mdi-archive"></i><span> Archived Records</span></a></li>

@@ -3365,6 +3365,74 @@ public function tana_summary_final(){
     return $this->db->update('tana_summary', $data);
 }
 
+public function phil_iri_records($school_id, $school_year)
+{
+    $this->ensure_phil_iri_schema();
+    return $this->db->where('school_id', $school_id)->where('school_year', (int)$school_year)->order_by('grade_level')->order_by('language')->get('phil_iri_records')->result();
+}
+
+public function phil_iri_default_sy($school_id, $fallback_year)
+{
+    $this->ensure_phil_iri_schema();
+    $row = $this->db->where('school_id', $school_id)->get('phil_iri_settings')->row();
+    return $row ? (int)$row->default_school_year : (int)$fallback_year;
+}
+
+public function set_phil_iri_default_sy($school_id, $school_year)
+{
+    $this->ensure_phil_iri_schema();
+    $data = array('school_id'=>$school_id, 'default_school_year'=>(int)$school_year, 'updated_at'=>date('Y-m-d H:i:s'));
+    $existing = $this->db->where('school_id', $school_id)->get('phil_iri_settings')->row();
+    if ($existing) return $this->db->where('school_id', $school_id)->update('phil_iri_settings', $data);
+    return $this->db->insert('phil_iri_settings', $data);
+}
+
+public function regional_phil_iri_records($region_id, $school_year)
+{
+    $this->ensure_phil_iri_schema();
+    return $this->db->select('pir.*, s.schoolName, s.division_id, d.description AS division_name')
+        ->from('phil_iri_records pir')->join('schools s', 's.schoolID = pir.school_id')
+        ->join('division d', 'd.id = s.division_id')->where('d.region_id', (int)$region_id)
+        ->where('pir.school_year', (int)$school_year)->where_in('pir.grade_level', array(4,5,6))
+        ->order_by('d.description')->order_by('s.schoolName')
+        ->order_by('pir.grade_level')->order_by('pir.language')->order_by('pir.assessment_period')->get()->result();
+}
+
+public function regional_phil_iri_school_count($region_id)
+{
+    return (int)$this->db->from('schools s')->join('division d', 'd.id = s.division_id')
+        ->where('d.region_id', (int)$region_id)->where_in('s.category', array(1,2,3))->count_all_results();
+}
+
+public function save_phil_iri($school_id, $school_year)
+{
+    $this->ensure_phil_iri_schema();
+    $grade = (int)$this->input->post('grade_level', true);
+    $language = $this->input->post('language', true); $period = $this->input->post('assessment_period', true);
+    $data = array('school_id'=>$school_id,'school_year'=>(int)$school_year,'grade_level'=>$grade,'language'=>$language,'assessment_period'=>$period,
+        'learners_assessed'=>(int)$this->input->post('learners_assessed', true),'independent'=>(int)$this->input->post('independent', true),
+        'instructional'=>(int)$this->input->post('instructional', true),'frustration'=>(int)$this->input->post('frustration', true),
+        'non_reader'=>(int)$this->input->post('non_reader', true),'updated_at'=>date('Y-m-d H:i:s'));
+    $existing = $this->db->where(array('school_id'=>$school_id,'school_year'=>(int)$school_year,'grade_level'=>$grade,'language'=>$language,'assessment_period'=>$period))->get('phil_iri_records')->row();
+    if ($existing) return $this->db->where('id', $existing->id)->update('phil_iri_records', $data);
+    $data['created_at'] = date('Y-m-d H:i:s');
+    return $this->db->insert('phil_iri_records', $data);
+}
+
+private function ensure_phil_iri_schema()
+{
+    $this->db->query("CREATE TABLE IF NOT EXISTS phil_iri_settings (
+        school_id VARCHAR(50) NOT NULL PRIMARY KEY, default_school_year INT NOT NULL,
+        updated_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $this->db->query("CREATE TABLE IF NOT EXISTS phil_iri_records (
+        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, school_id VARCHAR(50) NOT NULL, school_year INT NOT NULL,
+        grade_level TINYINT NOT NULL, language VARCHAR(20) NOT NULL, assessment_period VARCHAR(20) NOT NULL,
+        learners_assessed INT NOT NULL DEFAULT 0, independent INT NOT NULL DEFAULT 0, instructional INT NOT NULL DEFAULT 0,
+        frustration INT NOT NULL DEFAULT 0, non_reader INT NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
+        updated_at DATETIME NOT NULL, UNIQUE KEY uq_phil_iri_entry (school_id, school_year, grade_level, language, assessment_period),
+        KEY idx_phil_iri_year_school (school_year, school_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
 
 
 

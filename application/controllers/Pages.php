@@ -51,6 +51,10 @@ class Pages extends CI_Controller
             'division' => array('division', 'division_head', 'ict'),
             'district' => array('district'),
             'school_dashboard' => array('school'),
+            'phil_iri' => array('school'),
+            'phil_iri_save' => array('school'),
+            'phil_iri_setup_sy' => array('school'),
+            'regional_phil_iri_report' => array('region'),
             'learning_gap_archives' => array('school', 'division', 'division_head', 'region', 'district'),
             'profilelist' => array('admin'),
             'profile_new' => array('admin'),
@@ -1305,6 +1309,106 @@ class Pages extends CI_Controller
             show_error('Only school accounts can access Learning Gap data entry.', 403);
         }
         $this->learning_gap(true);
+    }
+
+    public function phil_iri()
+    {
+        if (!$this->session->logged_in || $this->session->position !== 'school') {
+            show_error('Only school accounts can access Phil-IRI data entry.', 403);
+            return;
+        }
+        $school = $this->Page_model->one_cond_row('schools', 'schoolID', (string) $this->session->username);
+        if (!$school) { show_error('School profile not found.', 404); return; }
+        $category = (int) $school->category;
+        $grades = array();
+        if (in_array($category, array(1, 2, 3), true)) $grades = array_merge($grades, array(4, 5, 6));
+        if (in_array($category, array(2, 3, 4, 5), true)) $grades = array_merge($grades, array(7, 8, 9, 10));
+        $school_id = (string) $this->session->username;
+        $selected_sy = $this->Page_model->phil_iri_default_sy($school_id, (int)$this->session->fy);
+        $data = array('grades' => $grades, 'records' => $this->Page_model->phil_iri_records($school_id, $selected_sy), 'selected_sy' => $selected_sy,
+            'school_year' => ($selected_sy - 1) . '-' . $selected_sy, 'school_year_options' => array());
+        for ($year = (int)date('Y') + 2; $year >= 2023; $year--) $data['school_year_options'][$year] = ($year - 1) . '-' . $year;
+        $this->load->view('templates/header'); $this->load->view('templates/menu');
+        $this->load->view('pages/phil_iri', $data);
+        $this->load->view('templates/footer'); $this->load->view('templates/footer_basic');
+    }
+
+    public function phil_iri_setup_sy()
+    {
+        if (!$this->session->logged_in || $this->session->position !== 'school') { show_error('Only school accounts can set the Phil-IRI school year.', 403); return; }
+        $this->require_post();
+        $sy = $this->input->post('school_year', true);
+        if (!is_scalar($sy) || !ctype_digit((string)$sy) || (int)$sy < 2023 || (int)$sy > (int)date('Y') + 2) {
+            $this->session->set_flashdata('danger', 'Select a valid school year.');
+        } elseif ($this->Page_model->set_phil_iri_default_sy((string)$this->session->username, (int)$sy)) {
+            $this->session->set_flashdata('success', 'Default Phil-IRI school year updated for this school.');
+        } else $this->session->set_flashdata('danger', 'The default school year could not be saved.');
+        redirect('Pages/phil_iri');
+    }
+
+    public function regional_phil_iri_report()
+    {
+        if (!$this->session->logged_in || $this->session->position !== 'region') {
+            show_error('Only regional users can access the regional Phil-IRI report.', 403);
+            return;
+        }
+        $region_id = (int)$this->session->region;
+        if ($region_id <= 0) { show_error('Your account has no assigned region.', 403); return; }
+        $requested_year = $this->input->get('sy');
+        $school_year = is_scalar($requested_year) && ctype_digit((string)$requested_year) ? (int)$requested_year : (int)$this->session->fy;
+        if ($school_year < 2023 || $school_year > (int)date('Y') + 2) $school_year = (int)$this->session->fy;
+        $records = $this->Page_model->regional_phil_iri_records($region_id, $school_year);
+        $totals = array('learners_assessed'=>0,'independent'=>0,'instructional'=>0,'frustration'=>0,'non_reader'=>0);
+        $groups = array(); $divisions = array(); $schools = array();
+        foreach ($records as $record) {
+            foreach ($totals as $key => $unused) $totals[$key] += (int)$record->$key;
+            $group_key = (int)$record->grade_level . '|' . $record->language . '|' . $record->assessment_period;
+            if (!isset($groups[$group_key])) $groups[$group_key] = array('grade_level'=>(int)$record->grade_level,'language'=>$record->language,'assessment_period'=>$record->assessment_period,'school_count'=>0,'learners_assessed'=>0,'independent'=>0,'instructional'=>0,'frustration'=>0,'non_reader'=>0);
+            foreach (array('learners_assessed','independent','instructional','frustration','non_reader') as $key) $groups[$group_key][$key] += (int)$record->$key;
+            $schools[(string)$record->school_id] = true;
+            $division_key = (int)$record->division_id;
+            if (!isset($divisions[$division_key])) $divisions[$division_key] = array('name'=>$record->division_name,'schools'=>array(),'learners_assessed'=>0,'independent'=>0,'instructional'=>0,'frustration'=>0,'non_reader'=>0);
+            $divisions[$division_key]['schools'][(string)$record->school_id] = true;
+            foreach (array('learners_assessed','independent','instructional','frustration','non_reader') as $key) {
+                $groups[$group_key][$key] = (int)$groups[$group_key][$key];
+                $divisions[$division_key][$key] += (int)$record->$key;
+            }
+        }
+        foreach ($groups as &$group) {
+            foreach ($records as $record) if ((int)$record->grade_level === $group['grade_level'] && $record->language === $group['language'] && $record->assessment_period === $group['assessment_period']) $group['school_count']++;
+        }
+        unset($group);
+        foreach ($divisions as &$division) $division['school_count'] = count($division['schools']);
+        unset($division);
+        usort($groups, function($a,$b){ return array($a['grade_level'],$a['language'],$a['assessment_period']) <=> array($b['grade_level'],$b['language'],$b['assessment_period']); });
+        $this->load->view('templates/header'); $this->load->view('templates/menu');
+        $this->load->view('pages/regional_phil_iri_report', array('records'=>$records,'totals'=>$totals,'groups'=>$groups,'divisions'=>$divisions,
+            'reported_school_count'=>count($schools),'regional_school_count'=>$this->Page_model->regional_phil_iri_school_count($region_id),
+            'school_year'=>$school_year,'school_year_label'=>($school_year-1).'-'.$school_year));
+        $this->load->view('templates/footer'); $this->load->view('templates/footer_basic');
+    }
+
+    public function phil_iri_save()
+    {
+        if (!$this->session->logged_in || $this->session->position !== 'school') { show_error('Only school accounts can encode Phil-IRI records.', 403); return; }
+        $this->require_post();
+        $this->form_validation->set_rules('grade_level', 'Grade level', 'required|integer');
+        $this->form_validation->set_rules('language', 'Language', 'required|in_list[English,Filipino]');
+        $this->form_validation->set_rules('assessment_period', 'Assessment period', 'required|in_list[Pre-test,Post-test]');
+        foreach (array('learners_assessed','independent','instructional','frustration','non_reader') as $field) $this->form_validation->set_rules($field, ucwords(str_replace('_',' ',$field)), 'required|integer|greater_than_equal_to[0]');
+        if ($this->form_validation->run() !== FALSE) {
+            $school = $this->Page_model->one_cond_row('schools', 'schoolID', (string) $this->session->username);
+            $grade = (int) $this->input->post('grade_level'); $category = $school ? (int)$school->category : 0;
+            $allowed = (in_array($category,array(1,2,3),true) && $grade >= 4 && $grade <= 6) || (in_array($category,array(2,3,4,5),true) && $grade >= 7 && $grade <= 10);
+            $total = array_sum(array_map(function($field){ return (int)$this->input->post($field); }, array('independent','instructional','frustration','non_reader')));
+            if ($allowed && $total <= (int)$this->input->post('learners_assessed')) {
+                $sy = $this->Page_model->phil_iri_default_sy((string)$this->session->username, (int)$this->session->fy);
+                if ($this->Page_model->save_phil_iri((string)$this->session->username, $sy)) {
+                    $this->session->set_flashdata('success', 'Phil-IRI results saved.');
+                } else $this->session->set_flashdata('danger', 'The results could not be saved. Please try again.');
+            } else $this->session->set_flashdata('danger', 'Check the grade level and ensure reading-level totals do not exceed learners assessed.');
+        } else $this->session->set_flashdata('danger', validation_errors('', ' '));
+        redirect('Pages/phil_iri');
     }
 
     public function learning_gap_school_summary()
