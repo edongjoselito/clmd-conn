@@ -13,7 +13,12 @@
             <p><?= !empty($regional_dashboard) ? 'Learning gaps, school progress, and interventions across all divisions in your region.' : 'Learning gaps, school progress, and interventions. Your subject at a glance.'; ?></p>
             <div class="area-hero-meta"><span><i class="mdi mdi-calendar-outline" aria-hidden="true"></i> Fiscal Year <?= (int) $this->session->fy; ?></span><span><i class="mdi mdi-map-marker-outline" aria-hidden="true"></i> <?= html_escape($scope_label); ?></span></div>
         </div>
-        <a href="#school-submissions" class="btn area-hero-action">View submissions <span aria-hidden="true">↗</span></a>
+        <div class="d-flex flex-wrap" style="gap:8px;position:relative;z-index:1;">
+            <a href="#school-submissions" class="btn area-hero-action">View submissions <span aria-hidden="true">↗</span></a>
+            <?php if (in_array(isset($area_slug) ? $area_slug : '', array('filipino','english'), true)): ?>
+                <a href="<?= base_url('Pages/regional_phil_iri_report'); ?>" class="btn area-hero-action"><i class="mdi mdi-book-open-page-variant mr-1" aria-hidden="true"></i>Phil-IRI KS2 Report</a>
+            <?php endif; ?>
+        </div>
     </section>
     <div class="area-section-heading"><div><h2>Overview</h2><p>Based on school submissions for the selected year.</p></div><span class="area-status"><?= $records ? 'Submitted data' : 'Awaiting submissions'; ?></span></div>
     <div class="row">

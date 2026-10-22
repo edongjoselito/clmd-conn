@@ -3387,21 +3387,25 @@ public function set_phil_iri_default_sy($school_id, $school_year)
     return $this->db->insert('phil_iri_settings', $data);
 }
 
-public function regional_phil_iri_records($region_id, $school_year)
+public function regional_phil_iri_records($region_id, $school_year, $division_id = 0)
 {
     $this->ensure_phil_iri_schema();
-    return $this->db->select('pir.*, s.schoolName, s.division_id, d.description AS division_name')
+    $this->db->select('pir.*, s.schoolName, s.division_id, d.description AS division_name')
         ->from('phil_iri_records pir')->join('schools s', 's.schoolID = pir.school_id')
         ->join('division d', 'd.id = s.division_id')->where('d.region_id', (int)$region_id)
         ->where('pir.school_year', (int)$school_year)->where_in('pir.grade_level', array(4,5,6))
         ->order_by('d.description')->order_by('s.schoolName')
-        ->order_by('pir.grade_level')->order_by('pir.language')->order_by('pir.assessment_period')->get()->result();
+        ->order_by('pir.grade_level')->order_by('pir.language')->order_by('pir.assessment_period');
+    if ((int)$division_id > 0) $this->db->where('s.division_id', (int)$division_id);
+    return $this->db->get()->result();
 }
 
-public function regional_phil_iri_school_count($region_id)
+public function regional_phil_iri_school_count($region_id, $division_id = 0)
 {
-    return (int)$this->db->from('schools s')->join('division d', 'd.id = s.division_id')
-        ->where('d.region_id', (int)$region_id)->where_in('s.category', array(1,2,3))->count_all_results();
+    $this->db->from('schools s')->join('division d', 'd.id = s.division_id')
+        ->where('d.region_id', (int)$region_id)->where_in('s.category', array(1,2,3));
+    if ((int)$division_id > 0) $this->db->where('s.division_id', (int)$division_id);
+    return (int)$this->db->count_all_results();
 }
 
 public function save_phil_iri($school_id, $school_year)

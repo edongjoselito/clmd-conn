@@ -36,7 +36,7 @@ class Pages extends CI_Controller
         // Subject accounts have a deliberately small, read-only application surface.
         if ($this->session->logged_in && strpos((string) $this->session->position, 'la_') === 0
             && !in_array($method, array('view', 'learning_area_dashboard', 'focal_persons', 'change_fy',
-                'password_change_required', 'change_password_user', 'logout'), true)) {
+                'regional_phil_iri_report', 'password_change_required', 'change_password_user', 'logout'), true)) {
             show_error('This account can access only its assigned learning-area dashboard.', 403);
         }
 
@@ -54,7 +54,7 @@ class Pages extends CI_Controller
             'phil_iri' => array('school'),
             'phil_iri_save' => array('school'),
             'phil_iri_setup_sy' => array('school'),
-            'regional_phil_iri_report' => array('region'),
+            'regional_phil_iri_report' => array('region', 'division', 'division_head', 'ict', 'la_filipino', 'la_english'),
             'learning_gap_archives' => array('school', 'division', 'division_head', 'region', 'district'),
             'profilelist' => array('admin'),
             'profile_new' => array('admin'),
@@ -1120,6 +1120,7 @@ class Pages extends CI_Controller
         $scope = array('type' => 'learning_area', 'id' => $slug);
         $this->render_dashboard('dashboard_learning_area', array(
             'area' => $areas[$slug],
+            'area_slug' => $slug,
             'regional_dashboard' => $division_id === 0,
             'regional_dashboard_origin' => false,
             'scope_label' => $division ? $division->description : 'Regional · All divisions',
@@ -1151,6 +1152,7 @@ class Pages extends CI_Controller
         );
         $this->render_dashboard('dashboard_learning_area', array(
             'area' => $areas[$slug],
+            'area_slug' => $slug,
             'regional_dashboard' => true,
             'regional_dashboard_origin' => true,
             'scope_label' => 'Regional · All divisions',
@@ -1348,16 +1350,39 @@ class Pages extends CI_Controller
 
     public function regional_phil_iri_report()
     {
-        if (!$this->session->logged_in || $this->session->position !== 'region') {
-            show_error('Only regional users can access the regional Phil-IRI report.', 403);
+        $position = (string)$this->session->position;
+        $division_id = 0;
+        $scope_heading = 'Regional Phil-IRI KS2 Report';
+        $scope_label = 'Regional · All divisions';
+        if ($position === 'region') {
+            $region_id = (int)$this->session->region;
+        } elseif (in_array($position, array('division','division_head','ict'), true)) {
+            $division_id = (int)$this->session->division;
+            $division = $division_id > 0 ? $this->db->where('id', $division_id)->get('division')->row() : null;
+            if (!$division) { show_error('Your account has no valid division assignment.', 403); return; }
+            $region_id = (int)$division->region_id;
+            $scope_heading = 'Division Phil-IRI KS2 Report';
+            $scope_label = (string)$division->description;
+        } elseif (in_array($position, array('la_filipino','la_english'), true)) {
+            $region_id = (int)$this->session->region;
+            $division_id = (int)$this->session->division;
+            if ($division_id > 0) {
+                $division = $this->db->where('id', $division_id)->where('region_id', $region_id)->get('division')->row();
+                if (!$division) { show_error('Your account has no valid division assignment.', 403); return; }
+                $scope_heading = 'Division Phil-IRI KS2 Report';
+                $scope_label = (string)$division->description;
+            } else {
+                $scope_heading = 'Regional Phil-IRI KS2 Report';
+            }
+        } else {
+            show_error('This account cannot access the Phil-IRI report.', 403);
             return;
         }
-        $region_id = (int)$this->session->region;
         if ($region_id <= 0) { show_error('Your account has no assigned region.', 403); return; }
         $requested_year = $this->input->get('sy');
         $school_year = is_scalar($requested_year) && ctype_digit((string)$requested_year) ? (int)$requested_year : (int)$this->session->fy;
         if ($school_year < 2023 || $school_year > (int)date('Y') + 2) $school_year = (int)$this->session->fy;
-        $records = $this->Page_model->regional_phil_iri_records($region_id, $school_year);
+        $records = $this->Page_model->regional_phil_iri_records($region_id, $school_year, $division_id);
         $totals = array('learners_assessed'=>0,'independent'=>0,'instructional'=>0,'frustration'=>0,'non_reader'=>0);
         $groups = array(); $divisions = array(); $schools = array();
         foreach ($records as $record) {
@@ -1383,8 +1408,8 @@ class Pages extends CI_Controller
         usort($groups, function($a,$b){ return array($a['grade_level'],$a['language'],$a['assessment_period']) <=> array($b['grade_level'],$b['language'],$b['assessment_period']); });
         $this->load->view('templates/header'); $this->load->view('templates/menu');
         $this->load->view('pages/regional_phil_iri_report', array('records'=>$records,'totals'=>$totals,'groups'=>$groups,'divisions'=>$divisions,
-            'reported_school_count'=>count($schools),'regional_school_count'=>$this->Page_model->regional_phil_iri_school_count($region_id),
-            'school_year'=>$school_year,'school_year_label'=>($school_year-1).'-'.$school_year));
+            'reported_school_count'=>count($schools),'regional_school_count'=>$this->Page_model->regional_phil_iri_school_count($region_id, $division_id),
+            'school_year'=>$school_year,'school_year_label'=>($school_year-1).'-'.$school_year,'scope_heading'=>$scope_heading,'scope_label'=>$scope_label));
         $this->load->view('templates/footer'); $this->load->view('templates/footer_basic');
     }
 

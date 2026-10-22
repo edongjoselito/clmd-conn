@@ -280,6 +280,7 @@ $is_dashboard = in_array($dashboard_method, array('view', 'region', 'division', 
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="fas fa-school"></i><span> Learning Gap Summary</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_records" class="waves-effect"><i class="fas fa-list"></i><span> Submitted Learning Gap</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_archives" class="waves-effect"><i class="mdi mdi-archive"></i><span> Archived Records</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/regional_phil_iri_report" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Phil-IRI KS2 Report</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/school_submission_monitoring" class="waves-effect"><i class="mdi mdi-clipboard-check-outline"></i><span> School Submissions</span></a></li>
                             <li>
                                 <a href="javascript: void(0);" class="waves-effect">
@@ -305,6 +306,7 @@ $is_dashboard = in_array($dashboard_method, array('view', 'region', 'division', 
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="fas fa-school"></i><span> Learning Gap Summary</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_records" class="waves-effect"><i class="fas fa-list"></i><span> Submitted Learning Gap</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_archives" class="waves-effect"><i class="mdi mdi-archive"></i><span> Archived Records</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/regional_phil_iri_report" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Phil-IRI KS2 Report</span></a></li>
                             <li><a href="#" class="waves-effect" data-toggle="modal" data-target="#renren"><i class="fas fa-lock"></i><span>Change Password</span></a></li>
 
                         <?php } ?>
@@ -357,6 +359,7 @@ $is_dashboard = in_array($dashboard_method, array('view', 'region', 'division', 
 
                         <?php if ($this->session->position == 'ict') { ?>
                             <li><a href="<?= base_url(); ?>pages/schools/<?= $this->session->division; ?>" class="waves-effect"><i class="fas fa-school"></i><span>Schools</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/regional_phil_iri_report" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Phil-IRI KS2 Report</span></a></li>
                             <li><a href="<?= base_url(); ?>pages/userlist_division" class="waves-effect"><i class="mdi mdi-account-supervisor"></i><span> Manage Users </span></a></li>
                         <?php } ?>
                     </ul>
