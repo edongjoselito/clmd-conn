@@ -1,0 +1,20 @@
+/* Theme values are set independently in learning_area_dashboards.php. */
+.area-dashboard .area-hero { background: radial-gradient(ellipse at top right, var(--area-primary), transparent 65%), linear-gradient(115deg, var(--area-dark), var(--area-primary)); border-bottom: 5px solid var(--area-primary); }
+.area-dashboard .area-hero p, .area-dashboard .area-eyebrow { color: #fff; }
+.area-brand { display:flex; gap:20px; align-items:center; margin-bottom:20px; }
+.area-logo { width:96px; height:96px; flex-shrink:0; border:3px solid #ffffff80; border-radius:26px; box-shadow:0 8px 24px #0002; }
+.area-dashboard .area-tagline { margin:0; font-size:16px; font-weight:600; }
+.area-dashboard .area-metric { border-top:3px solid var(--area-primary); }
+.area-dashboard .area-metric-icon, .area-dashboard .area-status, .area-dashboard .area-count, .area-dashboard .area-empty-icon { background:var(--area-soft); color:var(--area-primary); }
+.area-dashboard .area-hero-action { color:var(--area-dark); }
+.area-dashboard .area-hero-action:hover { background:var(--area-soft); }
+.area-dashboard .table thead th { background:var(--area-soft); color:var(--area-dark); border-bottom-color:var(--area-primary); }
+.area-dashboard .area-gap-note { background:var(--area-soft); border-left:3px solid var(--area-primary); padding:14px 18px; border-radius:8px; }
+.area-dashboard .btn-primary { background:var(--area-primary); border-color:var(--area-primary); }
+.area-dashboard a:focus-visible, .area-dashboard summary:focus-visible { outline-color:var(--area-primary); }
+.rd-area-links .rd-area-link { align-items:flex-start; border-top:4px solid var(--area-primary); padding:22px; }
+.rd-area-links .rd-area-link:hover { background:var(--area-soft); border-color:var(--area-primary); }
+.rd-area-link .area-card-logo { width:64px; height:64px; flex-shrink:0; border-radius:16px; }
+.rd-area-link .area-card-tagline { color:var(--area-dark); font-size:12px; margin:8px 0; display:block; }
+.rd-area-link strong { color:var(--area-dark); }
+@media(max-width:575px) { .area-brand { align-items:flex-start; flex-direction:column; } .area-logo { width:76px; height:76px; border-radius:22px; } .rd-area-links .rd-area-link { padding:16px; } }

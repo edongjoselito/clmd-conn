@@ -1,10 +1,15 @@
+<link rel="stylesheet" href="<?= base_url('assets/css/learning-area-themes.css'); ?>?v=<?= filemtime(FCPATH . 'assets/css/learning-area-themes.css'); ?>">
 <?php $assessed = (int) $summary->learners_assessed; $gap = (int) $summary->learners_with_gap; ?>
-<main class="area-dashboard" aria-labelledby="area-title">
-    <?php if (!empty($regional_dashboard_origin)) : ?><p><a href="<?= base_url('region'); ?>">&larr; Regional dashboard</a></p><?php endif; ?>
+<main style="--area-primary: <?= html_escape($area['theme']['primary']); ?>; --area-dark: <?= html_escape($area['theme']['dark']); ?>; --area-soft: <?= html_escape($area['theme']['soft']); ?>;" class="area-dashboard" aria-labelledby="area-title">
+    <?php if (!empty($regional_dashboard_origin)) : ?><p><a href="<?= base_url('region/learning-areas'); ?>">&larr; Learning Area Dashboards</a></p><?php endif; ?>
     <section class="area-hero">
         <div class="area-hero-copy">
             <span class="area-eyebrow"><?= !empty($regional_dashboard) ? 'CLMD · REGIONAL LEARNING AREA MONITORING' : 'CLMD · DIVISION LEARNING AREA MONITORING'; ?></span>
-            <h1 id="area-title"><?= html_escape($area['name']); ?></h1>
+            <div class="area-brand">
+                <img class="area-logo" src="<?= base_url($area['theme']['logo']); ?>" alt="<?= html_escape($area['name']); ?> logo" width="96" height="96">
+                <div><h1 id="area-title"><?= html_escape($area['name']); ?></h1>
+                <p class="area-tagline"><?= html_escape($area['theme']['tagline']); ?></p></div>
+            </div>
             <p><?= !empty($regional_dashboard) ? 'Learning gaps, school progress, and interventions across all divisions in your region.' : 'Learning gaps, school progress, and interventions. Your subject at a glance.'; ?></p>
             <div class="area-hero-meta"><span><i class="mdi mdi-calendar-outline" aria-hidden="true"></i> Fiscal Year <?= (int) $this->session->fy; ?></span><span><i class="mdi mdi-map-marker-outline" aria-hidden="true"></i> <?= html_escape($scope_label); ?></span></div>
         </div>

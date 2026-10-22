@@ -573,7 +573,7 @@ $position_count = !empty($pos) ? count($pos) : 0;
                                         <div class="form-group">
                                             <label for="division">Division</label>
                                             <select name="division_id" id="division" class="form-control">
-                                                <option value="">Select Division</option>
+                                                <option value=""><?= $this->session->position === 'region' ? 'Regional level (learning-area or regional account)' : 'Select Division'; ?></option>
                                                 <?php foreach($division as $row){ ?>
                                                     <option value="<?= html_escape($row->id); ?>" <?= (string) $selected_division === (string) $row->id ? 'selected' : ''; ?>>
                                                         <?= html_escape($row->description); ?>

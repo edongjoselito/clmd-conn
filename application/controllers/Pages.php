@@ -47,6 +47,7 @@ class Pages extends CI_Controller
             // root dispatches users here so the URL names the scope on screen.
             'region' => array('region'),
             'regional_learning_area_dashboard' => array('region'),
+            'regional_learning_area_dashboards' => array('region'),
             'division' => array('division', 'division_head', 'ict'),
             'district' => array('district'),
             'school_dashboard' => array('school'),
@@ -1155,12 +1156,17 @@ class Pages extends CI_Controller
         ));
     }
 
-    public function region()
+    public function regional_learning_area_dashboards()
     {
         $this->config->load('learning_area_dashboards');
-        $data = $this->region_scope_data();
-        $data['learning_area_dashboards'] = $this->config->item('learning_area_dashboards');
-        $this->render_dashboard('dashboard_region_learning_gap', $data);
+        $this->render_dashboard('regional_learning_area_dashboards', array(
+            'learning_area_dashboards' => $this->config->item('learning_area_dashboards'),
+        ));
+    }
+
+    public function region()
+    {
+        $this->render_dashboard('dashboard_region_learning_gap', $this->region_scope_data());
     }
 
     public function division()

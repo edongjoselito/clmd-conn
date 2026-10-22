@@ -82,21 +82,6 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
         </div>
     </header>
 
-    <section class="rd-card rd-area-shortcuts" aria-labelledby="rd-area-shortcuts-title">
-        <div class="rd-card-head">
-            <h2 id="rd-area-shortcuts-title">Regional Dashboards by Learning Area</h2>
-            <p>Review submitted records and performance for a specific learning area across all divisions in the region.</p>
-        </div>
-        <div class="rd-area-links">
-            <?php foreach ($learning_area_dashboards as $slug => $area) : ?>
-                <a class="rd-area-link" href="<?= base_url('region/learning-area/' . rawurlencode($slug)); ?>">
-                    <span class="rd-area-link-icon" aria-hidden="true"><i class="mdi mdi-book-open-page-variant"></i></span>
-                    <span><strong><?= html_escape($area['name']); ?></strong><small>View regional dashboard <i class="mdi mdi-arrow-right" aria-hidden="true"></i></small></span>
-                </a>
-            <?php endforeach; ?>
-        </div>
-    </section>
-
     <div class="rd-metrics">
         <a class="rd-metric" href="<?= $school_summary_url; ?>">
             <span class="rd-metric-top">

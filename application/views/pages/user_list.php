@@ -1,4 +1,10 @@
                         <?php
+                            $this->config->load('learning_area_dashboards');
+                            $learning_areas = $this->config->item('learning_area_dashboards');
+                            $division_names = array();
+                            foreach ($this->db->select('id, description')->get('division')->result() as $division_row) {
+                                $division_names[(int) $division_row->id] = $division_row->description;
+                            }
                             $themed_user_scope = !empty($division_scope) || !empty($district_user_scope);
                             $is_division_user_scope = !empty($division_scope) && empty($district_user_scope);
                             $district_name = !empty($district) ? mb_convert_case($district->description, MB_CASE_TITLE, 'UTF-8') : 'District';
@@ -430,17 +436,34 @@
                             </div>
                             <div class="workspace-panel-body">
                                 <div class="table-responsive">
-                                    <table id="datatable" class="table table-bordered dt-responsive nowrap" style="width: 100%;">
+                                    <label for="learning-area-account-filter">Account level</label>
+                                    <select id="learning-area-account-filter" class="form-control mb-3" style="max-width: 320px;">
+                                        <option value="">All accounts</option>
+                                        <?php if (empty($division_scope) && empty($district_user_scope) && $this->session->position !== 'district'): ?>
+                                        <option value="Regional learning area">Regional learning-area accounts</option>
+                                        <?php endif; ?>
+                                        <option value="Division learning area">Division learning-area accounts</option>
+                                    </select>
+                                    <table id="managed-users-table" class="table table-bordered dt-responsive nowrap" style="width: 100%;">
                                         <thead>
                                             <tr>
                                                 <th data-name="account">Account</th>
                                                 <th data-name="username">Username</th>
-                                                <th data-name="position">Position</th>
+                                                <th data-name="position">Position / Learning Area</th>
+                                                <th>Account Scope</th>
                                                 <th>Manage</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach($users as $row): ?>
+                                            <?php foreach($users as $row):
+                                                $area_slug = strpos((string) $row->position, 'la_') === 0 ? substr($row->position, 3) : '';
+                                                $is_learning_area = isset($learning_areas[$area_slug]);
+                                                $position_label = $is_learning_area ? $learning_areas[$area_slug]['name'] . ' Coordinator' : $row->position;
+                                                $assigned_division = (int) $row->p_id;
+                                                $scope_label = $assigned_division > 0
+                                                    ? 'Division' . ($is_learning_area ? ' learning area' : '') . ' · ' . (isset($division_names[$assigned_division]) ? $division_names[$assigned_division] : 'Division ' . $assigned_division)
+                                                    : ((int) $row->r_id > 0 ? 'Regional' . ($is_learning_area ? ' learning area' : '') . ' · All divisions' : 'Unassigned');
+                                            ?>
                                             <tr>
                                                 <td>
                                                     <div class="account-cell">
@@ -449,7 +472,8 @@
                                                     </div>
                                                 </td>
                                                 <td><span class="username-text"><?= html_escape($row->username); ?></span></td>
-                                                <td><span class="account-level"><?= html_escape($row->position); ?></span></td>
+                                                <td><span class="account-level"><?= html_escape($position_label); ?></span></td>
+                                                <td><?= html_escape($scope_label); ?></td>
                                                 <td>
                                                     <div class="user-actions">
                                                         <?php if(in_array($this->session->position, array('admin', 'region', 'division', 'ict', 'district'), true)){ ?>
@@ -545,64 +569,16 @@
                         }
                         }
 
-                        $(document).ready(function() {
-                            console.log('Initializing DataTables with client-side processing');
-                            var table = $('#datatable').DataTable({
+                        window.addEventListener('load', function() {
+                            var table = $('#managed-users-table').DataTable({
                                 pageLength: 20,
                                 lengthMenu: [[10, 20, 50, 100], [10, 20, 50, 100]],
                                 order: [[0, 'asc']],
                                 responsive: true,
-                                columns: [
-                                    {
-                                        data: 'account',
-                                        render: function(data, type, row) {
-                                            return '<div class="account-cell">' +
-                                                '<span class="account-avatar">' + row.initials + '</span>' +
-                                                '<span class="account-name">' + data + '</span>' +
-                                                '</div>';
-                                        }
-                                    },
-                                    { data: 'username', render: function(data) { return '<span class="username-text">' + data + '</span>'; } },
-                                    { data: 'position', render: function(data) { return '<span class="account-level">' + data + '</span>'; } },
-                                    {
-                                        data: 'id',
-                                        render: function(data, type, row) {
-                                            var actions = '';
-                                            <?php if(in_array($this->session->position, array('admin', 'region', 'division', 'ict', 'district'), true)){ ?>
-                                            actions += '<a class="btn btn-primary btn-sm" href="<?= base_url(); ?>pages/user_update/' + data + '"><i class="mdi mdi-pencil-outline"></i> Edit</a> ';
-                                            <?php } ?>
-                                            <?php if(in_array($this->session->position, array('admin', 'region'), true)){ ?>
-                                            actions += '<a href="#profile" class="open-AddBookDialog btn btn-primary btn-sm waves-effect waves-light" data-id="' + data + '" data-animation="slit" data-plugin="custommodal" data-overlayspeed="100" data-overlaycolor="#36404a">Change profile</a> ';
-                                            <?php } ?>
-                                            actions += '<form action="<?= base_url(); ?>pages/user_reset_password" method="post" style="display:inline;" onsubmit="return confirm(\'Reset this user\\\'s password?\');">' +
-                                                '<input type="hidden" name="<?= html_escape($this->security->get_csrf_token_name()); ?>" value="<?= html_escape($this->security->get_csrf_hash()); ?>">' +
-                                                '<input type="hidden" name="id" value="' + data + '">' +
-                                                '<button type="submit" class="btn btn-warning btn-sm waves-effect waves-light"><i class="mdi mdi-lock-reset"></i> Reset</button>' +
-                                                '</form> ';
-                                            <?php if(in_array($this->session->position, array('admin', 'region', 'division', 'ict', 'district'), true)){ ?>
-                                            actions += '<form action="<?= base_url(); ?>pages/user_delete" method="post" style="display:inline" onsubmit="return confirm(\'Delete this user account?\')">' +
-                                                '<input type="hidden" name="<?= html_escape($this->security->get_csrf_token_name()); ?>" value="<?= html_escape($this->security->get_csrf_hash()); ?>">' +
-                                                '<input type="hidden" name="id" value="' + parseInt(data, 10) + '">' +
-                                                '<button type="submit" class="btn btn-danger btn-sm"><i class="mdi mdi-trash-can-outline"></i> Delete</button></form>';
-                                            <?php } ?>
-                                            return '<div class="user-actions">' + actions + '</div>';
-                                        }
-                                    }
-                                ],
-                                language: {
-                                    search: "_INPUT_",
-                                    searchPlaceholder: "Search users..."
-                                },
-                                initComplete: function() {
-                                    console.log('DataTables initialized');
-                                    // Update account count from API response
-                                    table.on('xhr.dt', function(e, settings, json, xhr) {
-                                        console.log('XHR response:', json);
-                                        if (json && json.recordsTotal !== undefined) {
-                                            $('.account-level').html('<i class="mdi mdi-account-multiple-outline"></i> ' + json.recordsTotal + ' account' + (json.recordsTotal === 1 ? '' : 's'));
-                                        }
-                                    });
-                                }
+                                columnDefs: [{ targets: 4, orderable: false, searchable: false }]
+                            });
+                            $('#learning-area-account-filter').on('change', function() {
+                                table.column(3).search(this.value).draw();
                             });
                         });
                         </script>

@@ -309,6 +309,7 @@ $is_dashboard = in_array($dashboard_method, array('view', 'region', 'division', 
                         <?php } ?>
 
                         <?php if ($this->session->position == 'region') { ?>
+                            <li><a href="<?= base_url('region/learning-areas'); ?>" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Learning Area Dashboards </span></a></li>
                             <li>
                                 <a href="javascript: void(0);" class="waves-effect"><i class="mdi mdi-clipboard-check-outline"></i><span> Monitoring</span><span class="menu-arrow"></span></a>
                                 <ul class="nav-second-level" aria-expanded="false">
