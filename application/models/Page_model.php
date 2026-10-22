@@ -3365,6 +3365,91 @@ public function tana_summary_final(){
     return $this->db->update('tana_summary', $data);
 }
 
+public function crla_records($school_id, $school_year)
+{
+    $this->ensure_crla_schema();
+    return $this->db->where('school_id', (string)$school_id)->where('school_year', (int)$school_year)
+        ->order_by('grade_level')->order_by('language')->order_by('assessment_period')->get('crla_records')->result();
+}
+
+public function crla_default_sy($school_id, $fallback_year)
+{
+    $this->ensure_crla_schema();
+    $row = $this->db->where('school_id', (string)$school_id)->get('crla_settings')->row();
+    return $row ? (int)$row->default_school_year : (int)$fallback_year;
+}
+
+public function set_crla_default_sy($school_id, $school_year)
+{
+    $this->ensure_crla_schema();
+    $data = array('school_id'=>(string)$school_id, 'default_school_year'=>(int)$school_year, 'updated_at'=>date('Y-m-d H:i:s'));
+    $existing = $this->db->where('school_id', (string)$school_id)->get('crla_settings')->row();
+    if ($existing) return $this->db->where('school_id', (string)$school_id)->update('crla_settings', $data);
+    return $this->db->insert('crla_settings', $data);
+}
+
+public function regional_crla_records($region_id, $school_year, $division_id = 0, $filters = array())
+{
+    $this->ensure_crla_schema();
+    $this->db->select('cr.*, s.schoolName, s.schoolID AS school_code, s.division_id, d.description AS division_name')
+        ->from('crla_records cr')->join('schools s', 's.schoolID = cr.school_id')
+        ->join('division d', 'd.id = s.division_id')->where('d.region_id', (int)$region_id)
+        ->where('cr.school_year', (int)$school_year)->order_by('d.description')->order_by('s.schoolName')
+        ->order_by('cr.grade_level')->order_by('cr.language')->order_by('cr.assessment_period');
+    if ((int)$division_id > 0) $this->db->where('s.division_id', (int)$division_id);
+    if (!empty($filters['assessment_period'])) $this->db->where('cr.assessment_period', $filters['assessment_period']);
+    if (!empty($filters['grade_level'])) $this->db->where('cr.grade_level', (int)$filters['grade_level']);
+    if (!empty($filters['language'])) $this->db->where('cr.language', $filters['language']);
+    return $this->db->get()->result();
+}
+
+public function regional_crla_school_count($region_id, $division_id = 0, $categories = array(1,2,3))
+{
+    $this->db->from('schools s')->join('division d', 'd.id = s.division_id')
+        ->where('d.region_id', (int)$region_id)->where_in('s.category', $categories);
+    if ((int)$division_id > 0) $this->db->where('s.division_id', (int)$division_id);
+    return (int)$this->db->count_all_results();
+}
+
+public function save_crla($school_id, $school_year)
+{
+    $this->ensure_crla_schema();
+    $grade = (int)$this->input->post('grade_level', true);
+    $language = $this->input->post('language', true);
+    $period = $this->input->post('assessment_period', true);
+    $data = array(
+        'school_id'=>(string)$school_id, 'school_year'=>(int)$school_year, 'grade_level'=>$grade,
+        'language'=>$language, 'assessment_period'=>$period,
+        'learners_assessed'=>(int)$this->input->post('learners_assessed', true),
+        'low_emerging'=>(int)$this->input->post('low_emerging', true),
+        'high_emerging'=>(int)$this->input->post('high_emerging', true),
+        'developing'=>(int)$this->input->post('developing', true),
+        'transitioning'=>(int)$this->input->post('transitioning', true),
+        'at_grade_level'=>(int)$this->input->post('at_grade_level', true),
+        'updated_at'=>date('Y-m-d H:i:s'),
+    );
+    $key = array('school_id'=>(string)$school_id, 'school_year'=>(int)$school_year, 'grade_level'=>$grade, 'language'=>$language, 'assessment_period'=>$period);
+    $existing = $this->db->where($key)->get('crla_records')->row();
+    if ($existing) return $this->db->where('id', (int)$existing->id)->update('crla_records', $data);
+    $data['created_at'] = date('Y-m-d H:i:s');
+    return $this->db->insert('crla_records', $data);
+}
+
+private function ensure_crla_schema()
+{
+    $this->db->query("CREATE TABLE IF NOT EXISTS crla_settings (
+        school_id VARCHAR(50) NOT NULL PRIMARY KEY, default_school_year INT NOT NULL,
+        updated_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $this->db->query("CREATE TABLE IF NOT EXISTS crla_records (
+        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, school_id VARCHAR(50) NOT NULL, school_year INT NOT NULL,
+        grade_level TINYINT NOT NULL, language VARCHAR(40) NOT NULL, assessment_period VARCHAR(10) NOT NULL,
+        learners_assessed INT NOT NULL DEFAULT 0, low_emerging INT NOT NULL DEFAULT 0, high_emerging INT NOT NULL DEFAULT 0,
+        developing INT NOT NULL DEFAULT 0, transitioning INT NOT NULL DEFAULT 0, at_grade_level INT NOT NULL DEFAULT 0,
+        created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
+        UNIQUE KEY uq_crla_entry (school_id, school_year, grade_level, language, assessment_period),
+        KEY idx_crla_year_school (school_year, school_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
 public function phil_iri_records($school_id, $school_year)
 {
     $this->ensure_phil_iri_schema();
@@ -3387,23 +3472,23 @@ public function set_phil_iri_default_sy($school_id, $school_year)
     return $this->db->insert('phil_iri_settings', $data);
 }
 
-public function regional_phil_iri_records($region_id, $school_year, $division_id = 0)
+public function regional_phil_iri_records($region_id, $school_year, $division_id = 0, $grades = array(4,5,6))
 {
     $this->ensure_phil_iri_schema();
     $this->db->select('pir.*, s.schoolName, s.division_id, d.description AS division_name')
         ->from('phil_iri_records pir')->join('schools s', 's.schoolID = pir.school_id')
         ->join('division d', 'd.id = s.division_id')->where('d.region_id', (int)$region_id)
-        ->where('pir.school_year', (int)$school_year)->where_in('pir.grade_level', array(4,5,6))
+        ->where('pir.school_year', (int)$school_year)->where_in('pir.grade_level', $grades)
         ->order_by('d.description')->order_by('s.schoolName')
         ->order_by('pir.grade_level')->order_by('pir.language')->order_by('pir.assessment_period');
     if ((int)$division_id > 0) $this->db->where('s.division_id', (int)$division_id);
     return $this->db->get()->result();
 }
 
-public function regional_phil_iri_school_count($region_id, $division_id = 0)
+public function regional_phil_iri_school_count($region_id, $division_id = 0, $categories = array(1,2,3))
 {
     $this->db->from('schools s')->join('division d', 'd.id = s.division_id')
-        ->where('d.region_id', (int)$region_id)->where_in('s.category', array(1,2,3));
+        ->where('d.region_id', (int)$region_id)->where_in('s.category', $categories);
     if ((int)$division_id > 0) $this->db->where('s.division_id', (int)$division_id);
     return (int)$this->db->count_all_results();
 }

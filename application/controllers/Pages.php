@@ -36,7 +36,7 @@ class Pages extends CI_Controller
         // Subject accounts have a deliberately small, read-only application surface.
         if ($this->session->logged_in && strpos((string) $this->session->position, 'la_') === 0
             && !in_array($method, array('view', 'learning_area_dashboard', 'focal_persons', 'change_fy',
-                'regional_phil_iri_report', 'password_change_required', 'change_password_user', 'logout'), true)) {
+                'regional_phil_iri_report', 'regional_crla_report', 'password_change_required', 'change_password_user', 'logout'), true)) {
             show_error('This account can access only its assigned learning-area dashboard.', 403);
         }
 
@@ -54,6 +54,10 @@ class Pages extends CI_Controller
             'phil_iri' => array('school'),
             'phil_iri_save' => array('school'),
             'phil_iri_setup_sy' => array('school'),
+            'crla' => array('school'),
+            'crla_save' => array('school'),
+            'crla_setup_sy' => array('school'),
+            'regional_crla_report' => array('region', 'division', 'division_head', 'ict', 'la_filipino', 'la_english'),
             'regional_phil_iri_report' => array('region', 'division', 'division_head', 'ict', 'la_filipino', 'la_english'),
             'learning_gap_archives' => array('school', 'division', 'division_head', 'region', 'district'),
             'profilelist' => array('admin'),
@@ -1191,7 +1195,11 @@ class Pages extends CI_Controller
      */
     public function school_dashboard()
     {
-        $this->render_dashboard('dashboard_school_learning_gap', array('title' => 'Dashboard'));
+        $scope = array('type' => 'school', 'id' => (string) $this->session->username);
+        $this->render_dashboard('dashboard_school_learning_gap', array(
+            'title' => 'Dashboard',
+            'term_performance' => $this->Page_model->learning_gap_term_performance($scope),
+        ));
     }
 
     /**
@@ -1380,9 +1388,26 @@ class Pages extends CI_Controller
         }
         if ($region_id <= 0) { show_error('Your account has no assigned region.', 403); return; }
         $requested_year = $this->input->get('sy');
-        $school_year = is_scalar($requested_year) && ctype_digit((string)$requested_year) ? (int)$requested_year : (int)$this->session->fy;
+        $school_year = (int)$this->session->fy;
+        if (is_scalar($requested_year)) {
+            $requested_year = trim((string)$requested_year);
+            if (preg_match('/^(\d{4})-(\d{4})$/', $requested_year, $year_parts) && (int)$year_parts[2] === (int)$year_parts[1] + 1) {
+                $school_year = (int)$year_parts[2];
+            } elseif (ctype_digit($requested_year)) {
+                $school_year = (int)$requested_year;
+            }
+        }
         if ($school_year < 2023 || $school_year > (int)date('Y') + 2) $school_year = (int)$this->session->fy;
-        $records = $this->Page_model->regional_phil_iri_records($region_id, $school_year, $division_id);
+        $grade_band = $this->input->get('grade_band');
+        if (!in_array($grade_band, array('ks2','ks3'), true)) $grade_band = 'all';
+        $grade_bands = array(
+            'all' => array('label'=>'All Phil-IRI grades (4–10)','grades'=>range(4,10),'categories'=>array(1,2,3,4,5)),
+            'ks2' => array('label'=>'Key Stage 2 (Grades 4–6)','grades'=>array(4,5,6),'categories'=>array(1,2,3)),
+            'ks3' => array('label'=>'Key Stage 3 (Grades 7–10)','grades'=>array(7,8,9,10),'categories'=>array(2,3,4,5)),
+        );
+        $grade_scope = $grade_bands[$grade_band];
+        $scope_heading .= ' · ' . $grade_scope['label'];
+        $records = $this->Page_model->regional_phil_iri_records($region_id, $school_year, $division_id, $grade_scope['grades']);
         $totals = array('learners_assessed'=>0,'independent'=>0,'instructional'=>0,'frustration'=>0,'non_reader'=>0);
         $groups = array(); $divisions = array(); $schools = array();
         foreach ($records as $record) {
@@ -1408,8 +1433,9 @@ class Pages extends CI_Controller
         usort($groups, function($a,$b){ return array($a['grade_level'],$a['language'],$a['assessment_period']) <=> array($b['grade_level'],$b['language'],$b['assessment_period']); });
         $this->load->view('templates/header'); $this->load->view('templates/menu');
         $this->load->view('pages/regional_phil_iri_report', array('records'=>$records,'totals'=>$totals,'groups'=>$groups,'divisions'=>$divisions,
-            'reported_school_count'=>count($schools),'regional_school_count'=>$this->Page_model->regional_phil_iri_school_count($region_id, $division_id),
-            'school_year'=>$school_year,'school_year_label'=>($school_year-1).'-'.$school_year,'scope_heading'=>$scope_heading,'scope_label'=>$scope_label));
+            'reported_school_count'=>count($schools),'regional_school_count'=>$this->Page_model->regional_phil_iri_school_count($region_id, $division_id, $grade_scope['categories']),
+            'school_year'=>$school_year,'school_year_label'=>($school_year-1).'-'.$school_year,'scope_heading'=>$scope_heading,'scope_label'=>$scope_label,
+            'grade_band'=>$grade_band,'grade_bands'=>$grade_bands,'show_division_summary'=>$position === 'region'));
         $this->load->view('templates/footer'); $this->load->view('templates/footer_basic');
     }
 
@@ -1434,6 +1460,159 @@ class Pages extends CI_Controller
             } else $this->session->set_flashdata('danger', 'Check the grade level and ensure reading-level totals do not exceed learners assessed.');
         } else $this->session->set_flashdata('danger', validation_errors('', ' '));
         redirect('Pages/phil_iri');
+    }
+
+    public function crla()
+    {
+        if (!$this->session->logged_in || $this->session->position !== 'school') {
+            show_error('Only school accounts can access CRLA data entry.', 403);
+            return;
+        }
+        $school_id = (string)$this->session->username;
+        $school = $this->Page_model->one_cond_row('schools', 'schoolID', $school_id);
+        if (!$school) { show_error('School profile not found.', 404); return; }
+        if (!in_array((int)$school->category, array(1,2,3), true)) { show_error('CRLA data entry is available to schools serving Grades 1–3.', 403); return; }
+        $selected_sy = $this->Page_model->crla_default_sy($school_id, (int)$this->session->fy);
+        $data = array(
+            'records'=>$this->Page_model->crla_records($school_id, $selected_sy),
+            'selected_sy'=>$selected_sy,
+            'school_year'=>($selected_sy - 1) . '-' . $selected_sy,
+            'school_year_options'=>array(),
+        );
+        for ($year=(int)date('Y')+2; $year>=2023; $year--) $data['school_year_options'][$year] = ($year - 1) . '-' . $year;
+        $this->load->view('templates/header'); $this->load->view('templates/menu');
+        $this->load->view('pages/crla', $data);
+        $this->load->view('templates/footer'); $this->load->view('templates/footer_basic');
+    }
+
+    public function crla_setup_sy()
+    {
+        if (!$this->session->logged_in || $this->session->position !== 'school') { show_error('Only school accounts can set the CRLA school year.', 403); return; }
+        $this->require_post();
+        $school = $this->Page_model->one_cond_row('schools', 'schoolID', (string)$this->session->username);
+        if (!$school || !in_array((int)$school->category, array(1,2,3), true)) { show_error('CRLA setup is available to schools serving Grades 1–3.', 403); return; }
+        $sy = $this->input->post('school_year', true);
+        if (!is_scalar($sy) || !ctype_digit((string)$sy) || (int)$sy < 2023 || (int)$sy > (int)date('Y') + 2) {
+            $this->session->set_flashdata('danger', 'Select a valid school year.');
+        } elseif ($this->Page_model->set_crla_default_sy((string)$this->session->username, (int)$sy)) {
+            $this->session->set_flashdata('success', 'Default CRLA school year updated for this school.');
+        } else $this->session->set_flashdata('danger', 'The default school year could not be saved.');
+        redirect('Pages/crla');
+    }
+
+    public function crla_save()
+    {
+        if (!$this->session->logged_in || $this->session->position !== 'school') { show_error('Only school accounts can encode CRLA results.', 403); return; }
+        $this->require_post();
+        $this->form_validation->set_rules('grade_level', 'Grade level', 'required|integer|in_list[1,2,3]');
+        $this->form_validation->set_rules('language', 'Language', 'required|in_list[Mother Tongue (L1),Filipino,English]');
+        $this->form_validation->set_rules('assessment_period', 'Assessment period', 'required|in_list[BOSY,EOSY]');
+        foreach (array('learners_assessed','low_emerging','high_emerging','developing','transitioning','at_grade_level') as $field) {
+            $this->form_validation->set_rules($field, ucwords(str_replace('_',' ',$field)), 'required|integer|greater_than_equal_to[0]');
+        }
+        if ($this->form_validation->run() !== FALSE) {
+            $school_id = (string)$this->session->username;
+            $school = $this->Page_model->one_cond_row('schools', 'schoolID', $school_id);
+            $grade = (int)$this->input->post('grade_level');
+            $language = (string)$this->input->post('language', true);
+            $allowed_language = $language === 'Mother Tongue (L1)'
+                || ($grade >= 2 && $language === 'Filipino')
+                || ($grade >= 3 && $language === 'English');
+            $profiles = array('low_emerging','high_emerging','developing','transitioning','at_grade_level');
+            $profile_total = 0;
+            foreach ($profiles as $field) $profile_total += (int)$this->input->post($field);
+            if ($school && in_array((int)$school->category, array(1,2,3), true) && $allowed_language
+                && $profile_total <= (int)$this->input->post('learners_assessed')) {
+                $school_year = $this->Page_model->crla_default_sy($school_id, (int)$this->session->fy);
+                if ($this->Page_model->save_crla($school_id, $school_year)) {
+                    $this->session->set_flashdata('success', 'CRLA results saved.');
+                } else $this->session->set_flashdata('danger', 'The CRLA results could not be saved. Please try again.');
+            } else $this->session->set_flashdata('danger', 'Check the grade, language, and ensure profile counts do not exceed learners assessed.');
+        } else $this->session->set_flashdata('danger', validation_errors('', ' '));
+        redirect('Pages/crla');
+    }
+
+    public function regional_crla_report()
+    {
+        $position = (string)$this->session->position;
+        $division_id = 0;
+        $scope_heading = 'Regional CRLA Report';
+        $scope_label = 'Regional · All divisions';
+        if ($position === 'region') {
+            $region_id = (int)$this->session->region;
+        } elseif (in_array($position, array('division','division_head','ict'), true)) {
+            $division_id = (int)$this->session->division;
+            $division = $division_id > 0 ? $this->db->where('id', $division_id)->get('division')->row() : null;
+            if (!$division) { show_error('Your account has no valid division assignment.', 403); return; }
+            $region_id = (int)$division->region_id;
+            $scope_heading = 'Division CRLA Report';
+            $scope_label = (string)$division->description;
+        } elseif (in_array($position, array('la_filipino','la_english'), true)) {
+            $region_id = (int)$this->session->region;
+            $division_id = (int)$this->session->division;
+            if ($division_id > 0) {
+                $division = $this->db->where('id', $division_id)->where('region_id', $region_id)->get('division')->row();
+                if (!$division) { show_error('Your account has no valid division assignment.', 403); return; }
+                $scope_heading = 'Division CRLA Report';
+                $scope_label = (string)$division->description;
+            }
+        } else { show_error('This account cannot access the CRLA report.', 403); return; }
+        if ($region_id <= 0) { show_error('Your account has no assigned region.', 403); return; }
+
+        $requested_year = $this->input->get('sy');
+        $school_year = (int)$this->session->fy;
+        if (is_scalar($requested_year)) {
+            $requested_year = trim((string)$requested_year);
+            if (preg_match('/^(\d{4})-(\d{4})$/', $requested_year, $year_parts) && (int)$year_parts[2] === (int)$year_parts[1] + 1) $school_year = (int)$year_parts[2];
+            elseif (ctype_digit($requested_year)) $school_year = (int)$requested_year;
+        }
+        if ($school_year < 2023 || $school_year > (int)date('Y') + 2) $school_year = (int)$this->session->fy;
+        $period = (string)$this->input->get('period');
+        if (!in_array($period, array('BOSY','EOSY','all'), true)) $period = 'BOSY';
+        $grade = (string)$this->input->get('grade');
+        if (!in_array($grade, array('1','2','3'), true)) $grade = '';
+        $language = (string)$this->input->get('language');
+        if (!in_array($language, array('Mother Tongue (L1)','Filipino','English'), true)) $language = '';
+        $records = $this->Page_model->regional_crla_records($region_id, $school_year, $division_id, array(
+            'assessment_period'=>$period === 'all' ? '' : $period,
+            'grade_level'=>$grade,
+            'language'=>$language,
+        ));
+
+        $levels = array('low_emerging','high_emerging','developing','transitioning','at_grade_level');
+        $totals = array_merge(array('learners_assessed'=>0), array_fill_keys($levels, 0));
+        $groups = array(); $divisions = array(); $schools = array();
+        foreach ($records as $record) {
+            foreach ($totals as $field => $unused) $totals[$field] += (int)$record->$field;
+            $group_key = (int)$record->grade_level . '|' . $record->language . '|' . $record->assessment_period;
+            if (!isset($groups[$group_key])) {
+                $groups[$group_key] = array('grade_level'=>(int)$record->grade_level,'language'=>$record->language,'assessment_period'=>$record->assessment_period,
+                    'schools'=>array(),'learners_assessed'=>0,'low_emerging'=>0,'high_emerging'=>0,'developing'=>0,'transitioning'=>0,'at_grade_level'=>0);
+            }
+            $groups[$group_key]['schools'][(string)$record->school_id] = true;
+            foreach ($totals as $field => $unused) $groups[$group_key][$field] += (int)$record->$field;
+            $division_key = (int)$record->division_id;
+            if (!isset($divisions[$division_key])) $divisions[$division_key] = array('name'=>$record->division_name,'schools'=>array(),'learners_assessed'=>0,'low_emerging'=>0,'high_emerging'=>0,'developing'=>0,'transitioning'=>0,'at_grade_level'=>0);
+            $divisions[$division_key]['schools'][(string)$record->school_id] = true;
+            foreach ($totals as $field => $unused) $divisions[$division_key][$field] += (int)$record->$field;
+            $schools[(string)$record->school_id] = true;
+        }
+        foreach ($groups as &$group) $group['school_count'] = count($group['schools']);
+        unset($group);
+        foreach ($divisions as &$division) $division['school_count'] = count($division['schools']);
+        unset($division);
+        usort($groups, function($a,$b){ return array($a['grade_level'],$a['language'],$a['assessment_period']) <=> array($b['grade_level'],$b['language'],$b['assessment_period']); });
+        $school_count = $this->Page_model->regional_crla_school_count($region_id, $division_id);
+        $this->load->view('templates/header'); $this->load->view('templates/menu');
+        $this->load->view('pages/regional_crla_report', array(
+            'records'=>$records,'totals'=>$totals,'groups'=>$groups,'divisions'=>$divisions,
+            'reported_school_count'=>count($schools),'eligible_school_count'=>$school_count,
+            'school_year'=>$school_year,'school_year_label'=>($school_year-1).'-'.$school_year,
+            'scope_heading'=>$scope_heading,'scope_label'=>$scope_label,
+            'period'=>$period,'grade_filter'=>$grade,'language_filter'=>$language,
+            'show_division_summary'=>$position === 'region' || (strpos($position, 'la_') === 0 && $division_id === 0),
+        ));
+        $this->load->view('templates/footer'); $this->load->view('templates/footer_basic');
     }
 
     public function learning_gap_school_summary()

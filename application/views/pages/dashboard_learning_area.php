@@ -17,6 +17,7 @@
             <a href="#school-submissions" class="btn area-hero-action">View submissions <span aria-hidden="true">↗</span></a>
             <?php if (in_array(isset($area_slug) ? $area_slug : '', array('filipino','english'), true)): ?>
                 <a href="<?= base_url('Pages/regional_phil_iri_report'); ?>" class="btn area-hero-action"><i class="mdi mdi-book-open-page-variant mr-1" aria-hidden="true"></i>Phil-IRI KS2 Report</a>
+                <a href="<?= base_url('Pages/regional_crla_report'); ?>" class="btn area-hero-action"><i class="mdi mdi-book-open-variant mr-1" aria-hidden="true"></i>CRLA Report</a>
             <?php endif; ?>
         </div>
     </section>

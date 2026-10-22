@@ -194,7 +194,7 @@ if ($div_encoded_total > 0) {
 
     <section class="lg-card">
         <div class="lg-card-head">
-            <div><h4>Division CPL and Recorded Gap Rate per Term</h4><p>Gap rate = sum of recorded gap counts ÷ sum of recorded assessed counts. CPL is weighted by assessed count for records with a CPL value.</p></div>
+            <div><h4>Proficiency and Gap Rate by Term</h4><p>Gap rate = sum of recorded gap counts ÷ sum of recorded assessed counts. CPL is weighted by assessed count for records with a CPL value.</p></div>
             <span class="analysis-badge"><i class="mdi mdi-chart-timeline-variant"></i> CPL coverage: <?= number_format($cpl_record_count); ?>/<?= number_format($record_count); ?> records</span>
         </div>
         <div class="lg-card-body">
@@ -371,8 +371,8 @@ if ($div_encoded_total > 0) {
         var hasSummative = termRows.some(function (row) { return row.s1 !== null || row.s2 !== null; });
         if (termCanvas && (hasTermData || hasSummative)) {
             var termDatasets = [
-                { label: 'Recorded Gap Rate (%)', data: termRows.map(function (row) { return row.gapPercentage; }), backgroundColor: 'rgba(229,145,43,.78)', borderColor: '#d57d16', borderWidth: 1 },
-                { type: 'line', label: 'CPL (%)', data: termRows.map(function (row) { return row.cpl; }), borderColor: '#20805c', backgroundColor: 'rgba(32,128,92,.10)', pointBackgroundColor: '#20805c', pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 5, fill: false, spanGaps: true, lineTension: .25 }
+                { label: 'Recorded gap rate', data: termRows.map(function (row) { return row.gapPercentage; }), backgroundColor: 'rgba(128,0,32,.78)', borderColor: '#800020', borderWidth: 0 },
+                { type: 'line', label: 'Class proficiency level', data: termRows.map(function (row) { return row.cpl; }), borderColor: '#1d6b3c', backgroundColor: 'rgba(29,107,60,.08)', pointBackgroundColor: '#1d6b3c', pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 5, borderWidth: 2, fill: false, spanGaps: true, lineTension: .25 }
             ];
             if (hasSummative) {
                 termDatasets.push(

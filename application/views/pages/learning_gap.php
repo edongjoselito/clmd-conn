@@ -78,12 +78,12 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
     <?php if (!$entry_mode): ?>
     <div class="lgm-card term-chart-card">
         <div class="lgm-card-head">
-            <div><h4><i class="mdi mdi-chart-bar mr-1"></i> CPL and Recorded Assessment Counts per Term</h4><small><?= html_escape($scope_label); ?> · Counts are direct sums from submitted records.</small></div>
-            <small>CPL uses only records with an encoded CPL value.</small>
+            <div><h4><i class="mdi mdi-chart-bar mr-1"></i> Proficiency and Gap Rate by Term</h4><small><?= html_escape($scope_label); ?> · Recorded gap rate and class proficiency level across the selected fiscal year.</small></div>
+            <small>Gap rate = learners with gap ÷ learners assessed. CPL is weighted by assessed count.</small>
         </div>
         <div class="lgm-card-body">
             <div class="term-chart-wrap">
-                <canvas id="termPerformanceChart" role="img" aria-label="Chart of class proficiency level, learners assessed, and learners with learning gap for each term"></canvas>
+                <canvas id="termPerformanceChart" role="img" aria-label="Chart of recorded gap rate and class proficiency level for each term"></canvas>
                 <div id="termPerformanceEmpty" class="term-chart-empty"><div><i class="mdi mdi-chart-bar-stacked"></i>No per-term assessment data has been submitted yet.</div></div>
             </div>
             <?php if ($has_summative): ?>
@@ -202,12 +202,13 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
                 'term' => (string) $row->term,
                 'assessed' => (int) $row->record_count > 0 ? (int) $row->learners_assessed : null,
                 'gap' => (int) $row->record_count > 0 ? (int) $row->learners_with_gap : null,
+                'gapRate' => (int) $row->learners_assessed > 0 ? round(((int) $row->learners_with_gap / (int) $row->learners_assessed) * 100, 2) : null,
                 'cpl' => $row->class_proficiency_level === null ? null : (float) $row->class_proficiency_level,
                 's1' => $row->cpl_summative_1 === null ? null : (float) $row->cpl_summative_1,
                 's2' => $row->cpl_summative_2 === null ? null : (float) $row->cpl_summative_2,
             );
         }, $term_performance), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-        renderPerformanceChart(rows, 'termPerformanceChart', 'termPerformanceEmpty');
+        renderTermPerformanceChart(rows, 'termPerformanceChart', 'termPerformanceEmpty');
         var areaRows = <?= json_encode(array_map(function ($row) {
             return array(
                 'term' => (string) $row->learning_area,
@@ -219,6 +220,38 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
             );
         }, $area_performance), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
         renderPerformanceChart(areaRows, 'areaPerformanceChart', 'areaPerformanceEmpty');
+
+        function renderTermPerformanceChart(rows, canvasId, emptyId) {
+            var canvas = document.getElementById(canvasId);
+            var empty = document.getElementById(emptyId);
+            if (!canvas || typeof Chart === 'undefined') return;
+            var hasData = rows.some(function (row) { return row.gapRate !== null || row.cpl !== null; });
+            if (!hasData) {
+                canvas.style.display = 'none';
+                empty.style.display = 'flex';
+                return;
+            }
+            new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: rows.map(function (row) { return row.term; }),
+                    datasets: [
+                        { label: 'Recorded gap rate', data: rows.map(function (row) { return row.gapRate; }), backgroundColor: 'rgba(128,0,32,.78)', borderColor: '#800020', borderWidth: 0 },
+                        { type: 'line', label: 'Class proficiency level', data: rows.map(function (row) { return row.cpl; }), borderColor: '#1d6b3c', backgroundColor: 'rgba(29,107,60,.08)', pointBackgroundColor: '#1d6b3c', pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 5, borderWidth: 2, fill: false, spanGaps: true, lineTension: .25 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 18, boxWidth: 8 } },
+                    tooltips: { mode: 'index', intersect: false, callbacks: { label: function (item, data) { var label = data.datasets[item.datasetIndex].label; return label + ': ' + (item.yLabel === null ? 'No data' : Number(item.yLabel).toFixed(1) + '%'); } } },
+                    scales: {
+                        xAxes: [{ gridLines: { display: false }, barPercentage: .58, categoryPercentage: .68 }],
+                        yAxes: [{ ticks: { beginAtZero: true, max: 100, stepSize: 20, callback: function (value) { return value + '%'; } }, scaleLabel: { display: true, labelString: 'Percentage' }, gridLines: { color: 'rgba(28,72,101,.08)' } }]
+                    }
+                }
+            });
+        }
 
         function renderPerformanceChart(rows, canvasId, emptyId) {
         var canvas = document.getElementById(canvasId);
