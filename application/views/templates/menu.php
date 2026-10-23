@@ -257,6 +257,7 @@ if ($this->session->position === 'school') {
                         <?php if (strpos((string) $this->session->position, 'la_') === 0): ?>
                             <li><a href="<?= base_url('focal-persons'); ?>" class="waves-effect"><i class="mdi mdi-account-group-outline"></i><span> Focal Persons </span></a></li>
                             <?php if (in_array((string)$this->session->position, array('la_filipino', 'la_english'), true)): ?>
+                                <li><a href="<?= base_url('Pages/regional_phil_iri_report'); ?>" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Phil-IRI KS2 Report</span></a></li>
                                 <li><a href="<?= base_url('Pages/regional_crla_report'); ?>" class="waves-effect"><i class="mdi mdi-book-open-variant"></i><span> CRLA Report</span></a></li>
                             <?php endif; ?>
                         <?php endif; ?>

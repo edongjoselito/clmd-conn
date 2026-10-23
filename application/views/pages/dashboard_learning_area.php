@@ -1,34 +1,42 @@
 <link rel="stylesheet" href="<?= base_url('assets/css/learning-area-themes.css'); ?>?v=<?= filemtime(FCPATH . 'assets/css/learning-area-themes.css'); ?>">
-<?php $assessed = (int) $summary->learners_assessed; $gap = (int) $summary->learners_with_gap; ?>
-<main style="--area-primary: <?= html_escape($area['theme']['primary']); ?>; --area-dark: <?= html_escape($area['theme']['dark']); ?>; --area-soft: <?= html_escape($area['theme']['soft']); ?>;" class="area-dashboard" aria-labelledby="area-title">
+<?php $is_filipino = isset($area_slug) && $area_slug === 'filipino'; $assessed = (int) $summary->learners_assessed; $gap = (int) $summary->learners_with_gap; ?>
+<main style="--area-primary: <?= html_escape($area['theme']['primary']); ?>; --area-dark: <?= html_escape($area['theme']['dark']); ?>; --area-soft: <?= html_escape($area['theme']['soft']); ?>;" class="area-dashboard<?= $is_filipino ? ' area-dashboard-filipino' : ''; ?>" aria-labelledby="area-title">
     <?php if (!empty($regional_dashboard_origin)) : ?><p><a href="<?= base_url('region/learning-areas'); ?>">&larr; Learning Area Dashboards</a></p><?php endif; ?>
     <section class="area-hero">
         <div class="area-hero-copy">
             <span class="area-eyebrow"><?= !empty($regional_dashboard) ? 'CLMD · REGIONAL LEARNING AREA MONITORING' : 'CLMD · DIVISION LEARNING AREA MONITORING'; ?></span>
             <div class="area-brand">
-                <img class="area-logo" src="<?= base_url($area['theme']['logo']); ?>" alt="<?= html_escape($area['name']); ?> logo" width="96" height="96">
+                <img class="area-logo" src="<?= base_url($is_filipino ? 'assets/images/learning-areas/filipino-data-hub-emblem-transparent.png' : $area['theme']['logo']); ?>" alt="<?= html_escape($area['name']); ?> logo" width="96" height="96">
                 <div><h1 id="area-title"><?= html_escape($area['name']); ?></h1>
                 <p class="area-tagline"><?= html_escape($area['theme']['tagline']); ?></p></div>
             </div>
-            <p><?= !empty($regional_dashboard) ? 'Learning gaps, school progress, and interventions across all divisions in your region.' : 'Learning gaps, school progress, and interventions. Your subject at a glance.'; ?></p>
+            <p><?= $is_filipino ? 'Subaybayan ang pagkatuto sa Filipino at ang mga hakbang upang mapaunlad ang kasanayan ng bawat mag-aaral.' : (!empty($regional_dashboard) ? 'Learning gaps, school progress, and interventions across all divisions in your region.' : 'Learning gaps, school progress, and interventions. Your subject at a glance.'); ?></p>
             <div class="area-hero-meta"><span><i class="mdi mdi-calendar-outline" aria-hidden="true"></i> Fiscal Year <?= (int) $this->session->fy; ?></span><span><i class="mdi mdi-map-marker-outline" aria-hidden="true"></i> <?= html_escape($scope_label); ?></span></div>
         </div>
-        <div class="d-flex flex-wrap" style="gap:8px;position:relative;z-index:1;">
-            <a href="#school-submissions" class="btn area-hero-action">View submissions <span aria-hidden="true">↗</span></a>
-            <?php if (in_array(isset($area_slug) ? $area_slug : '', array('filipino','english'), true)): ?>
-                <a href="<?= base_url('Pages/regional_phil_iri_report'); ?>" class="btn area-hero-action"><i class="mdi mdi-book-open-page-variant mr-1" aria-hidden="true"></i>Phil-IRI KS2 Report</a>
-                <a href="<?= base_url('Pages/regional_crla_report'); ?>" class="btn area-hero-action"><i class="mdi mdi-book-open-variant mr-1" aria-hidden="true"></i>CRLA Report</a>
-            <?php endif; ?>
+        <?php if ($is_filipino): ?>
+        <div class="filipino-hero-art" aria-hidden="true">
+            <span class="filipino-art-orbit"></span>
+            <img src="<?= base_url('assets/images/learning-areas/filipino-data-hub-emblem-transparent.png'); ?>" alt="" width="160" height="160">
+            <span class="filipino-art-caption">WIKA · DIWA · KULTURA</span>
         </div>
+        <?php endif; ?>
     </section>
-    <div class="area-section-heading"><div><h2>Overview</h2><p>Based on school submissions for the selected year.</p></div><span class="area-status"><?= $records ? 'Submitted data' : 'Awaiting submissions'; ?></span></div>
+    <?php if ($is_filipino): ?>
+    <aside class="filipino-focus" aria-label="Gabay sa pagsusuri">
+        <div><span class="filipino-kicker">GABAY SA PAGSUSURI</span><h2>Mula sa datos tungo sa pagkatuto</h2></div>
+        <p><strong>Basahin.</strong> Suriin ang mga resulta.</p>
+        <p><strong>Unawain.</strong> Tukuyin ang kasanayang nangangailangan ng suporta.</p>
+        <p><strong>Tugunan.</strong> Iugnay ang interbensiyon sa pangangailangan.</p>
+    </aside>
+    <?php endif; ?>
+    <div class="area-section-heading"><div><h2><?= $is_filipino ? 'Pangkalahatang Kalagayan' : 'Overview'; ?></h2><p><?= $is_filipino ? 'Batay sa mga ulat ng paaralan para sa napiling taon.' : 'Based on school submissions for the selected year.'; ?></p></div><span class="area-status"><?= $records ? 'Submitted data' : 'Awaiting submissions'; ?></span></div>
     <div class="row">
-    <?php $metric_index = 0; $metric_icons = array('file-document-outline', 'school', 'account-group-outline', 'chart-line'); foreach (array('Submitted records' => $summary->record_count, 'Reporting schools' => $summary->school_count, 'Learner assessments' => $assessed, 'Assessments with gaps' => $gap) as $label => $value): ?>
+    <?php $metric_index = 0; $metric_icons = array('file-document-outline', 'school', 'account-group-outline', 'chart-line'); foreach (array(($is_filipino ? 'Mga naipasang ulat' : 'Submitted records') => $summary->record_count, ($is_filipino ? 'Mga paaralang nag-ulat' : 'Reporting schools') => $summary->school_count, ($is_filipino ? 'Mga pagtataya' : 'Learner assessments') => $assessed, ($is_filipino ? 'Mga pagtatayang may puwang' : 'Assessments with gaps') => $gap) as $label => $value): ?>
         <div class="col-sm-6 col-xl-3"><div class="card area-metric"><div class="card-body"><span class="area-metric-icon" aria-hidden="true"><i class="mdi mdi-<?= $metric_icons[$metric_index++]; ?>"></i></span><p><?= html_escape($label); ?></p><strong><?= number_format($value); ?></strong><span class="area-metric-caption">Selected fiscal year</span></div></div></div>
     <?php endforeach; ?>
     </div>
     <p class="area-gap-note"><i class="mdi mdi-information-outline" aria-hidden="true"></i> Recorded gap rate: <strong><?= $assessed ? number_format($gap / $assessed * 100, 1) . '%' : 'No data'; ?></strong>. Assessment totals may include the same learner in multiple records.</p>
-    <div class="card"><div class="card-body"><div class="area-section-heading"><div><h2>Term Performance</h2><p>Compare assessment results and class proficiency across terms.</p></div></div><div class="table-responsive"><table class="table table-striped">
+    <div class="card"><div class="card-body"><div class="area-section-heading"><div><h2><?= $is_filipino ? 'Pagganap sa Bawat Markahan' : 'Term Performance'; ?></h2><p><?= $is_filipino ? 'Paghambingin ang resulta ng pagtataya at antas ng kasanayan sa bawat markahan.' : 'Compare assessment results and class proficiency across terms.'; ?></p></div></div><div class="table-responsive"><table class="table table-striped">
         <thead><tr><th>Term</th><th>Records</th><th>Assessed</th><th>With gaps</th><th>Gap rate</th><th>Class proficiency level</th></tr></thead><tbody>
         <?php foreach ($terms as $term): ?><tr>
             <td><?= html_escape($term->term); ?></td><td><?= number_format($term->record_count); ?></td><td><?= number_format($term->learners_assessed); ?></td><td><?= number_format($term->learners_with_gap); ?></td>
@@ -36,8 +44,8 @@
             <td><?= $term->class_proficiency_level !== null ? number_format($term->class_proficiency_level, 1) . '%' : '—'; ?></td>
         </tr><?php endforeach; ?>
         </tbody></table></div></div></div>
-    <section id="school-submissions" class="card"><div class="card-body"><div class="area-section-heading"><div><h2>School Submissions and Interventions</h2><p>Competencies that need attention and the actions schools are taking.</p></div><span class="area-count"><?= number_format(count($records)); ?> records</span></div>
-    <?php if (!$records): ?><div class="area-empty"><span class="area-empty-icon" aria-hidden="true"><i class="mdi mdi-clipboard-text-outline"></i></span><h3>No submissions yet</h3><p>No submissions for this learning area in <?= (int) $this->session->fy; ?>. Matching school records will appear here as they are submitted.</p><small>To review another year, use the fiscal year selector above.</small></div>
+    <section id="school-submissions" class="card"><div class="card-body"><div class="area-section-heading"><div><h2><?= $is_filipino ? 'Mga Ulat at Interbensiyon' : 'School Submissions and Interventions'; ?></h2><p><?= $is_filipino ? 'Mga kasanayang nangangailangan ng suporta at mga hakbang ng paaralan.' : 'Competencies that need attention and the actions schools are taking.'; ?></p></div><span class="area-count"><?= number_format(count($records)); ?> records</span></div>
+    <?php if (!$records): ?><div class="area-empty"><span class="area-empty-icon" aria-hidden="true"><i class="mdi mdi-clipboard-text-outline"></i></span><h3><?= $is_filipino ? 'Wala pang naipapasang ulat' : 'No submissions yet'; ?></h3><p>No submissions for this learning area in <?= (int) $this->session->fy; ?>. Matching school records will appear here as they are submitted.</p><small>To review another year, use the fiscal year selector above.</small></div>
     <?php else: ?><div class="table-responsive"><table class="table table-hover"><thead><tr><th>School / Division</th><th>Grade / Term</th><th>Least learned competency</th><th>Intervention / Action</th><th>Status</th></tr></thead><tbody>
     <?php foreach ($records as $record): ?><tr>
         <td><?= html_escape($record->schoolName ?: $record->school_id); ?><br><small class="text-muted"><?= html_escape($record->division_name); ?></small></td>

@@ -18,3 +18,28 @@
 .rd-area-link .area-card-tagline { color:var(--area-dark); font-size:12px; margin:8px 0; display:block; }
 .rd-area-link strong { color:var(--area-dark); }
 @media(max-width:575px) { .area-brand { align-items:flex-start; flex-direction:column; } .area-logo { width:76px; height:76px; border-radius:22px; } .rd-area-links .rd-area-link { padding:16px; } }
+
+/* Filipino: ink, burgundy, parchment, and woven geometric details. */
+.area-dashboard-filipino { background: #fcfaf5; border-radius: 24px; padding: 24px; }
+.area-dashboard-filipino .area-hero { position: relative; isolation: isolate; overflow: hidden; border-bottom: 5px solid #d9b474; background: radial-gradient(ellipse at 80% 0, #a7454f55, transparent 65%), linear-gradient(120deg, #381d29, #742635); }
+.area-dashboard-filipino .area-hero::before { content: ''; position: absolute; inset: 0; z-index: -1; opacity: .07; background: repeating-linear-gradient(45deg, transparent 0 19px, #ffe1a3 20px 21px, transparent 22px 40px), repeating-linear-gradient(-45deg, transparent 0 19px, #ffe1a3 20px 21px, transparent 22px 40px); }
+.area-dashboard-filipino .area-hero-copy { max-width: 780px; }
+.area-dashboard-filipino h1 { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(40px, 5vw, 64px); letter-spacing: -.025em; }
+.area-dashboard-filipino .area-tagline { color: #f5d69c; font-weight: 400; }
+.area-dashboard-filipino .area-logo { width: 120px; height: 124px; object-fit: contain; padding: 8px; background: #fffdf8; border: 1px solid #d9b474; border-radius: 16px; }
+.filipino-hero-art { position: relative; display: flex; flex: 0 0 200px; flex-direction: column; align-items: center; justify-content: center; gap: 22px; min-height: 240px; }
+.filipino-hero-art img { width: 200px; height: 206px; object-fit: contain; padding: 14px; background: #fffdf8; border: 1px solid #d9b474; border-radius: 20px; box-shadow: 0 18px 40px #210c2070; }
+.filipino-art-orbit { position: absolute; width: 230px; height: 230px; border: 1px solid #dfbd7945; border-radius: 50%; z-index: -1; }
+.filipino-art-caption { color: #f5d69c; font-size: 10px; letter-spacing: .2em; }
+.filipino-focus { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 24px; align-items: center; padding: 24px; margin-bottom: 32px; border: 1px solid #e7d8be; border-radius: 14px; background: #fbf3e6; }
+.filipino-kicker { color: #7d4a25; font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.filipino-focus h2 { font-family: Georgia, serif; color: #48232c; font-size: 21px; margin: 8px 0 0; }
+.filipino-focus p { font-size: 13px; line-height: 1.6; color: #62534b; margin: 0; }
+.filipino-focus strong { display: block; color: #812c3b; font-size: 15px; margin-bottom: 4px; }
+.area-dashboard-filipino .area-section-heading h2 { color: #48232c; font-family: Georgia, serif; }
+.area-dashboard-filipino .area-metric { border: 1px solid #eadfce; border-top: 3px solid #922e3d; border-radius: 14px; box-shadow: 0 6px 18px #381d2906; }
+.area-dashboard-filipino .area-metric strong { color: #622b37; }
+.area-dashboard-filipino .area-metric-icon { border: 1px solid #e7d8be; }
+.area-dashboard-filipino > .card { border: 1px solid #eadfce; border-radius: 14px; }
+@media (max-width: 1100px) { .filipino-hero-art { display: none; } .filipino-focus { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 575px) { .area-dashboard-filipino { padding: 12px; } .filipino-focus { grid-template-columns: 1fr; gap: 16px; padding: 20px; } .area-dashboard-filipino .area-hero { padding: 24px; } }

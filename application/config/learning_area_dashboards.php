@@ -15,7 +15,7 @@ $config['learning_area_dashboards'] = array(
 
 // Each learning area owns its visual identity; edit these independently.
 $learning_area_themes = array(
-    'filipino' => array('primary' => '#8f2345', 'dark' => '#43172c', 'soft' => '#fff1f4', 'tagline' => 'Wika, panitikan, at pagkakakilanlan', 'logo' => 'assets/images/learning-areas/filipino.svg'),
+    'filipino' => array('primary' => '#922e3d', 'dark' => '#381d29', 'soft' => '#fbf3e6', 'tagline' => 'Wika, panitikan, at pagkakakilanlan', 'logo' => 'assets/images/learning-areas/filipino.svg'),
     'english' => array('primary' => '#2458a0', 'dark' => '#142e59', 'soft' => '#eef5ff', 'tagline' => 'Language, literacy, and expression', 'logo' => 'assets/images/learning-areas/english.svg'),
     'mathematics' => array('primary' => '#5145a6', 'dark' => '#252054', 'soft' => '#f2f0ff', 'tagline' => 'Patterns, reasoning, and problem solving', 'logo' => 'assets/images/learning-areas/mathematics.svg'),
     'science' => array('primary' => '#147969', 'dark' => '#103f3c', 'soft' => '#eaf9f3', 'tagline' => 'Inquiry, discovery, and evidence', 'logo' => 'assets/images/learning-areas/science.svg'),
