@@ -204,7 +204,7 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
             <div class="rec-empty">
                 <i class="mdi mdi-file-search-outline" aria-hidden="true"></i>
                 <h3><?= $has_record_filters ? 'No matching records' : 'No records yet'; ?></h3>
-                <p><?= $has_record_filters ? 'Try another grade, learning area, or trimester, or clear your filters.' : 'Learning gap records will appear here once they have been encoded.'; ?></p>
+                <p><?= $has_record_filters ? 'Try another proficiency level, grade, learning area, or trimester, or clear your filters.' : 'Learning gap records will appear here once they have been encoded.'; ?></p>
                 <?php if ($has_record_filters) : ?>
                     <a class="btn btn-outline-primary" href="<?= $records_url; ?>">Clear filters</a>
                 <?php elseif ($is_school && !$is_archive_year) : ?>
@@ -338,9 +338,9 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
     updateDistricts();
     var fieldsByMode = {
         all: ['division_id', 'district_id', 'learning_area', 'proficiency_level', 'grade_level', 'term', 'competency'],
-        division: ['division_id'],
-        district: ['division_id', 'district_id'],
-        area: ['division_id', 'learning_area']
+        division: ['division_id', 'proficiency_level'],
+        district: ['division_id', 'district_id', 'proficiency_level'],
+        area: ['division_id', 'learning_area', 'proficiency_level']
     };
     var buttons = document.querySelectorAll('[data-record-filter]');
     function setMode(mode, clearHidden) {
@@ -360,9 +360,9 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
         });
         hint.textContent = {
             all: 'Choose any combination of filters, then select Apply Filters.',
-            division: 'Select a Division, then select Apply Filters.',
-            district: 'Select a Division and a District, then select Apply Filters.',
-            area: 'Select a Division and Learning Area, then select Apply Filters.'
+            division: 'Select a Division and, if needed, a Proficiency Level, then select Apply Filters.',
+            district: 'Select a Division, a District and, if needed, a Proficiency Level, then select Apply Filters.',
+            area: 'Select a Division, a Learning Area and, if needed, a Proficiency Level, then select Apply Filters.'
         }[mode];
         updateDistricts();
     }

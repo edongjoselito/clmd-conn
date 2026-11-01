@@ -329,6 +329,7 @@ if ($this->session->position === 'school') {
                                 <a href="javascript: void(0);" class="waves-effect"><i class="mdi mdi-clipboard-check-outline"></i><span> Monitoring</span><span class="menu-arrow"></span></a>
                                 <ul class="nav-second-level" aria-expanded="false">
                                     <li><a href="<?= base_url('monitoring/tool'); ?>">Tools</a></li>
+                                    <li><a href="<?= base_url('monitoring/summary'); ?>">Summary</a></li>
                                     <li>
                                         <a href="javascript: void(0);">Settings <span class="menu-arrow"></span></a>
                                         <ul class="nav-third-level" aria-expanded="false">

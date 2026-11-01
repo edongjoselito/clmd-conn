@@ -2155,6 +2155,46 @@ class Pages extends CI_Controller
         redirect('monitoring/tool');
     }
 
+    /** Regional roll-up of saved assessments: 8-domain graph and one-SDO Word summary. */
+    public function monitoring_summary()
+    {
+        $region = $this->monitoring_assessment_context();
+        require_once APPPATH . 'libraries/Monitoring_summary.php';
+        $tool_id = (int) $this->input->get('tool_id');
+        $tool = $tool_id ? $this->Monitoring_model->tool($region, $tool_id) : null;
+        if ($tool_id && !$tool) { show_404(); return; }
+        $records = $this->Monitoring_model->assessments($region);
+        $school_years = array();
+        foreach ($records as $record) { $school_years[$record->sy] = $record->sy; }
+        krsort($school_years);
+        $requested_sy = $this->input->get('sy');
+        // One school year at a time: combining years would blur the ratings.
+        $selected_sy = in_array($requested_sy, $school_years, true) ? $requested_sy : (string) reset($school_years);
+        $payloads = array();
+        foreach ($records as $record) {
+            if ($record->sy !== $selected_sy) { continue; }
+            $payload = json_decode($record->payload, true);
+            if (!is_array($payload)) { continue; }
+            // Assessments saved before tools existed belong to the legacy tool.
+            if ($tool && (isset($payload['tool_id']) ? (int) $payload['tool_id'] !== (int) $tool->id : $tool->seed_key !== 'legacy')) { continue; }
+            $payload['record_id'] = (int) $record->id;
+            $payloads[] = $payload;
+        }
+        $groups = $this->Monitoring_model->defaults();
+        $summary = Monitoring_summary::by_division($payloads, $groups, $this->Page_model->regional_divisions($region));
+        $selected = null;
+        foreach ($summary as $row) {
+            if ((string) $row['id'] === $this->input->get('division_id')) { $selected = $row; }
+        }
+        if (!$selected) {
+            foreach ($summary as $row) {
+                if ($row['forms']) { $selected = $row; break; }
+            }
+        }
+        $this->render_dashboard('monitoring_summary', array('groups' => $groups, 'tools' => $this->Monitoring_model->tools($region),
+            'tool' => $tool, 'school_years' => $school_years, 'selected_sy' => $selected_sy, 'summary' => $summary, 'selected' => $selected));
+    }
+
     public function monitoring_tools()
     {
         $region = $this->monitoring_settings_region();
