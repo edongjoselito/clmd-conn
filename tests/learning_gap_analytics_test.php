@@ -124,6 +124,37 @@ try {
     $lines = lg_analytics_interpretation(array_values(array_diff_key($rollup['districts'], array('unassigned' => true))), 'district');
     check(strpos($lines[0], '2 of 3 districts have submitted') === 0 && strpos($lines[0], 'Quiet') !== false, 'Coverage sentence is wrong.');
     echo "PASS: per-term rollup and plain-language interpretation\n";
+
+    $levels = function ($rows) {
+        $counts = array();
+        foreach ($rows as $row) $counts[$row->label] = (int) $row->count;
+        return $counts;
+    };
+    // N1 80 is Proficient; N2 60 and N3 50 are Nearly Proficient.
+    $north_schools = array_values(array_filter($rollup['schools'], function ($row) { return $row->district_key === '11'; }));
+    $north_levels = lg_proficiency_distribution($north_schools);
+    check($levels($north_levels) === array('Highly Proficient' => 0, 'Proficient' => 1, 'Nearly Proficient' => 2, 'Low Proficient' => 0, 'Not Proficient' => 0, 'No CPL encoded' => 0), 'District proficiency counts are wrong.');
+    check(round($north_levels[2]->share, 2) === 66.67, 'A proficiency share is wrong.');
+    check($north_levels[0]->range === '90–100%' && $north_levels[1]->range === '75–89.99%' && $north_levels[4]->range === '0–24.99%', 'A CPL range does not match the proficiency levels.');
+    $division_levels = lg_proficiency_distribution(array_values($rollup['schools']));
+    check(array_sum($levels($division_levels)) === (int) $rollup['totals']->school_total, 'Proficiency counts do not add up to every school.');
+    // Level boundaries, and a school whose only record has no CPL.
+    $edge_levels = lg_proficiency_distribution(array_map(function ($cpl) {
+        return (object) array('class_proficiency_level' => $cpl);
+    }, array(90.0, 89.99, 75.0, 0.0, null)));
+    check($levels($edge_levels) === array('Highly Proficient' => 1, 'Proficient' => 2, 'Nearly Proficient' => 0, 'Low Proficient' => 0, 'Not Proficient' => 1, 'No CPL encoded' => 1), 'A school landed in the wrong proficiency level.');
+    check(lg_proficiency_distribution(array())[0]->share === 0, 'An empty district divided by zero.');
+    echo "PASS: schools are counted per proficiency level and add up to every school\n";
+
+    $table = lg_report_performance_table($terms, 'Term', 'term');
+    check($table[0] === array('Term', 'Records', 'Assessed', 'With gap', 'Gap rate (%)', 'CPL (%)', 'Proficiency level', 'Mastery'), 'Report table headings are wrong.');
+    check(count($table) === 4 && $table[1][0] === 'Term 1' && $table[1][1] === 5, 'Report table rows are wrong.');
+    $expected_cpl = round($terms[0]->class_proficiency_level, 2);
+    check($table[1][5] === $expected_cpl && $table[1][6] === lg_proficiency_level($expected_cpl), 'Report table CPL and level disagree.');
+    // Term 2 has an assessed count but no CPL; Term 3 has no records at all.
+    check($table[2][4] === 50.0 && $table[2][5] === null && $table[2][6] === null && $table[2][7] === null, 'A missing CPL was given a level.');
+    check($table[3][4] === null && $table[3][5] === null, 'An empty term was given a value.');
+    echo "PASS: report tables keep measures numeric and leave missing values empty\n";
 } finally {
     $connection->close();
     $admin->query('DROP DATABASE `' . $name . '`');

@@ -389,6 +389,61 @@ if (!function_exists('lg_priority_records')) {
     }
 }
 
+if (!function_exists('lg_proficiency_distribution')) {
+    /**
+     * Counts schools per proficiency level from lg_scope_rollup() school rows. Each
+     * school sits in the level of its weighted CPL. Schools without a CPL keep their
+     * own row, so the counts always add up to every school in scope.
+     */
+    function lg_proficiency_distribution(array $schools)
+    {
+        $rows = array();
+        $ceiling = '100';
+        foreach (lg_proficiency_levels() as $level) {
+            $rows[$level['label']] = array('label' => $level['label'], 'range' => $level['minimum'] . '–' . $ceiling . '%', 'count' => 0);
+            $ceiling = number_format($level['minimum'] - 0.01, 2);
+        }
+        $no_cpl = 'No CPL encoded';
+        $rows[$no_cpl] = array('label' => $no_cpl, 'range' => '—', 'count' => 0);
+
+        foreach ($schools as $school) {
+            $label = lg_proficiency_level($school->class_proficiency_level);
+            $rows[isset($rows[$label]) ? $label : $no_cpl]['count']++;
+        }
+
+        $total = count($schools);
+        return array_values(array_map(function ($row) use ($total) {
+            $row['share'] = $total > 0 ? ($row['count'] / $total) * 100 : 0;
+            return (object) $row;
+        }, $rows));
+    }
+}
+
+if (!function_exists('lg_report_performance_table')) {
+    /**
+     * One report table for term, learning area or grade rows. Measures stay numeric,
+     * with the unit in the heading, so Excel can still calculate on them.
+     */
+    function lg_report_performance_table(array $rows, $label, $name_field = 'name')
+    {
+        $table = array(array($label, 'Records', 'Assessed', 'With gap', 'Gap rate (%)', 'CPL (%)', 'Proficiency level', 'Mastery'));
+        foreach ($rows as $row) {
+            $cpl = $row->class_proficiency_level;
+            $table[] = array(
+                $row->$name_field,
+                (int) $row->record_count,
+                (int) $row->learners_assessed,
+                (int) $row->learners_with_gap,
+                $row->gap_rate === null ? null : round((float) $row->gap_rate, 1),
+                $cpl === null ? null : round((float) $cpl, 2),
+                $cpl === null ? null : lg_proficiency_level($cpl),
+                $cpl === null ? null : lg_cpl_band((float) $cpl),
+            );
+        }
+        return $table;
+    }
+}
+
 if (!function_exists('lg_term_coverage_caution')) {
     /** Warns when one term has far fewer records than another, which makes their comparison unreliable. */
     function lg_term_coverage_caution(array $term_performance)

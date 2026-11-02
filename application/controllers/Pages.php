@@ -1730,6 +1730,7 @@ class Pages extends CI_Controller
             'title' => 'Learning Gap Analytics',
             'level' => $level,
             'is_district_account' => $is_district_account,
+            'region' => $this->Page_model->one_cond_row('region', 'id', (int) $this->session->region),
             'division' => $this->Page_model->one_cond_row('division', 'id', (int) $this->session->division),
             'district' => $district,
             'school' => $school,
@@ -1739,6 +1740,7 @@ class Pages extends CI_Controller
             'area_performance' => lg_group_rollup($level_records, 'learning_area'),
             'grade_performance' => lg_group_rollup($level_records, 'grade_level'),
             'priority_records' => $school ? lg_priority_records($level_records) : array(),
+            'proficiency_distribution' => $school ? array() : lg_proficiency_distribution($district ? $units : array_values($rollup['schools'])),
         );
         $named_units = array_values(array_filter($units, function ($unit) { return $unit->key !== 'unassigned'; }));
         $data['unit_interpretation'] = lg_analytics_interpretation($named_units, $level === 'division' ? 'district' : 'school');

@@ -11,7 +11,10 @@
 .lga-eyebrow { display:block; margin-bottom:8px; color:#c9eafa; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
 .lga-hero h1 { margin:0 0 7px; color:#fff; font-size:27px; font-weight:700; overflow-wrap:anywhere; }
 .lga-hero p { margin:0; color:#dceefa; }
+.lga-hero-actions { display:flex; flex:0 0 auto; flex-wrap:wrap; justify-content:flex-end; gap:8px; max-width:340px; }
 .lga-hero .btn { flex:0 0 auto; border-radius:10px; font-size:13px; font-weight:700; white-space:nowrap; }
+.lga-report-status { flex:1 0 100%; min-height:1em; color:#dceefa; font-size:12px; text-align:right; }
+.lga-doc { display:none; }
 
 .lga-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; margin-bottom:22px; }
 .lga-kpi { padding:20px; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 6px 19px rgba(59,7,24,.06); }
@@ -39,6 +42,8 @@
 .lga-table .num { text-align:right; font-variant-numeric:tabular-nums; }
 .lga-table tbody th a { color:var(--navy); font-weight:700; }
 .lga-table small { display:block; color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
+#lgaUnitsTable thead th { padding-left:10px; padding-right:22px; white-space:normal; vertical-align:bottom; }
+#lgaUnitsTable td, #lgaUnitsTable tbody th { padding-left:10px; padding-right:10px; }
 .lga-competency { min-width:260px; white-space:pre-line!important; }
 .lga-pill { display:inline-block; padding:4px 9px; border-radius:999px; color:#21815c; background:#e9f7f0; font-size:10px; font-weight:700; white-space:nowrap; }
 .lga-pill.pending { color:#788692; background:#f0f3f5; }
@@ -61,7 +66,41 @@
 @media (max-width:991.98px) { .lga-chart-grid { grid-template-columns:1fr; } }
 @media (max-width:767.98px) {
     .lga-hero { align-items:flex-start; flex-direction:column; padding:24px; }
+    .lga-hero-actions { justify-content:flex-start; max-width:none; width:100%; }
+    .lga-report-status { text-align:left; }
     .lga-hero .btn { width:100%; }
     .lga-card-head, .lga-card-body { padding:18px; }
 }
 @media (max-width:479.98px) { .lga-kpis { grid-template-columns:1fr; } }
+
+/* Printing shows the report document in place of the dashboard. */
+@media print {
+    @page {
+        size:A4 portrait;
+        margin:15mm;
+        @bottom-center { content:'Page ' counter(page) ' of ' counter(pages); font:9pt Arial, sans-serif; }
+    }
+    body { min-width:0!important; background:#fff!important; }
+    .navbar-custom, .left-side-menu, .footer, .lga { display:none!important; }
+    .content-page, .content-page .content, .content-page .container-fluid { margin:0!important; padding:0!important; overflow:visible!important; }
+    .lga-doc { display:block; color:#000; font:10pt/1.3 Arial, sans-serif; }
+    .lga-doc p { margin:0 0 4pt; color:#000; font-size:10pt; line-height:1.3; }
+    .lga-doc-letterhead { margin-bottom:12pt; text-align:center; }
+    .lga-doc-letterhead img { width:20mm; height:20mm; margin-bottom:4pt; }
+    .lga-doc-letterhead p { margin:0; line-height:1.3; }
+    .lga-doc-letterhead p:nth-of-type(1) { font:12pt "Old English Text MT", "Times New Roman", serif; }
+    .lga-doc-letterhead p:nth-of-type(2) { font:700 15pt "Old English Text MT", "Times New Roman", serif; }
+    .lga-doc h1 { margin:0 0 10pt; color:#000; font:700 13pt Arial, sans-serif; text-align:center; text-transform:uppercase; }
+    .lga-doc h2 { margin:14pt 0 5pt; color:#000; font:700 11pt Arial, sans-serif; break-after:avoid; }
+    .lga-doc .lga-doc-meta { margin-bottom:1pt; }
+    .lga-doc table { width:100%; margin-bottom:6pt; border-collapse:collapse; table-layout:fixed; }
+    .lga-doc th, .lga-doc td { padding:3pt 4pt; border:1px solid #000; color:#000; font-size:9pt; line-height:1.25; overflow-wrap:anywhere; vertical-align:top; white-space:pre-line; }
+    .lga-doc th { background:#eee; font-size:8pt; font-weight:700; overflow-wrap:normal; text-align:center; vertical-align:middle; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+    .lga-doc thead { display:table-header-group; }
+    .lga-doc tr { break-inside:avoid; }
+    .lga-doc .num { text-align:right; }
+    .lga-doc-signatures { display:flex; gap:20mm; margin-top:24pt; break-inside:avoid; }
+    .lga-doc-signatures > div { flex:1; }
+    .lga-doc-signatures span { display:block; height:32pt; border-bottom:1px solid #000; }
+    .lga-doc-signatures small { display:block; margin-top:2pt; font-size:8pt; text-align:center; }
+}

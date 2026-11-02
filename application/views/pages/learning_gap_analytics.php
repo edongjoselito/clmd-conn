@@ -13,6 +13,9 @@ $percent = function ($value, $decimals = 1) {
 $sort_value = function ($value) {
     return $value === null ? -1 : round((float) $value, 2);
 };
+$proficiency = function ($cpl) {
+    return $cpl === null ? '—' : lg_proficiency_level($cpl);
+};
 
 $fy = (int) $this->session->fy;
 $division_name = !empty($division->description) ? $division->description : 'Your Division';
@@ -50,7 +53,7 @@ if ($level === 'school') {
     $kpis[] = array('Recorded assessed count', number_format((int) $metrics->learners_assessed), 'Sum across submitted records');
 }
 $kpis[] = array('Recorded gap rate', $percent($metrics->gap_rate), number_format((int) $metrics->learners_with_gap) . ' of ' . number_format((int) $metrics->learners_assessed) . ' recorded');
-$kpis[] = array('CPL', $percent($cpl), $cpl === null ? 'No CPL encoded yet' : lg_cpl_band((float) $cpl) . ' · ' . number_format((int) $metrics->cpl_record_count) . ' of ' . lg_count_label($record_count, 'record'));
+$kpis[] = array('CPL', $percent($cpl), $cpl === null ? 'No CPL encoded yet' : lg_proficiency_level($cpl) . ' · ' . lg_cpl_band((float) $cpl) . ' · ' . number_format((int) $metrics->cpl_record_count) . ' of ' . lg_count_label($record_count, 'record'));
 
 $chart_rows = array();
 foreach ($units as $unit) {
@@ -105,6 +108,112 @@ $chart_panel = function ($id, $title, $note, $height, $description) {
         . '<div class="lga-chart-wrap" style="height:' . (int) $height . 'px"><canvas id="' . html_escape($id) . '" role="img" aria-label="' . html_escape($description) . ' The table lists the same values."></canvas></div></div>';
 };
 $bars_height = function ($rows) { return max(200, count($rows) * 26 + 50); };
+
+// The printed document and the Word and Excel downloads all come from these blocks.
+$report_title = ucfirst($level) . ' Proficiency Report';
+$report_name = trim(strtolower(preg_replace('/[^a-z0-9]+/i', '-', $report_title . ' ' . $level_name . ' FY ' . $fy)), '-');
+$report_meta = array('Division' => $division_name);
+if (!empty($district)) {
+    $report_meta['District'] = $district->name;
+}
+if (!empty($school)) {
+    $report_meta['School'] = $school->name . ' (School ID ' . $school->key . ')';
+}
+$report_meta['Fiscal Year'] = (string) $fy;
+$report_meta['Generated'] = date('F j, Y');
+$report_lines = function ($lines) {
+    return array_map(function ($line) {
+        return array('text' => html_entity_decode(strip_tags($line), ENT_QUOTES, 'UTF-8'));
+    }, $lines);
+};
+
+$report_letterhead = array_values(array_filter(array(
+    'Republic of the Philippines',
+    'Department of Education',
+    !empty($region->description) ? $region->description : '',
+    !empty($division->description) ? 'Schools Division of ' . $division->description : '',
+)));
+$report_blocks = array(
+    array('letterhead' => $report_letterhead, 'logo' => base_url('assets/images/report/ke.png')),
+    array('title' => $report_title, 'center' => true),
+);
+foreach ($report_meta as $label => $text) {
+    $report_blocks[] = array('label' => $label, 'text' => $text);
+}
+$report_blocks[] = array('heading' => 'Summary');
+$report_blocks[] = array('table' => array_merge(array(array('Measure', 'Result', 'Details')), $kpis), 'widths' => array(3, 2, 5));
+if ($level !== 'school') {
+    $report_blocks[] = array('heading' => 'Schools by proficiency level');
+    $report_blocks[] = array('text' => 'Each school is placed by its class proficiency level (CPL) for the fiscal year, weighted by assessed count.');
+    $distribution_table = array(array('Proficiency level', 'CPL range', 'Schools', 'Share (%)'));
+    foreach ($proficiency_distribution as $row) {
+        $distribution_table[] = array($row->label, $row->range, (int) $row->count, round($row->share, 1));
+    }
+    $report_blocks[] = array('table' => $distribution_table, 'widths' => array(4, 3, 2, 2));
+
+    $unit_table = array(array_merge(
+        array($level === 'division' ? 'District' : 'School'),
+        $level === 'division' ? array('Schools reporting') : array(),
+        array('Records', 'Assessed', 'With gap', 'Gap rate (%)', 'CPL (%)', 'Proficiency level', 'Mastery'),
+        $level === 'district' ? array('Latest submission') : array()
+    ));
+    foreach ($units as $unit) {
+        $unit_cpl = $unit->class_proficiency_level;
+        $unit_table[] = array_merge(
+            array($level === 'district' ? $unit->name . ' (' . $unit->key . ')' : $unit->name),
+            $level === 'division' ? array((int) $unit->schools_reporting . ' of ' . (int) $unit->school_total) : array(),
+            array(
+                (int) $unit->record_count,
+                (int) $unit->learners_assessed,
+                (int) $unit->learners_with_gap,
+                $unit->gap_rate === null ? null : round($unit->gap_rate, 1),
+                $unit_cpl === null ? null : round((float) $unit_cpl, 2),
+                $unit_cpl === null ? null : lg_proficiency_level($unit_cpl),
+                $unit_cpl === null ? null : lg_cpl_band((float) $unit_cpl),
+            ),
+            $level === 'district' ? array($unit->latest_submission ? date('M j, Y', strtotime($unit->latest_submission)) : 'Pending') : array()
+        );
+    }
+    $report_blocks[] = array('heading' => ($level === 'division' ? 'District' : 'School') . ' results');
+    $report_blocks[] = array('table' => $unit_table, 'widths' => array(24, 9, 10, 7, 7, 8, 13, 16, 12), 'size' => 18);
+    $report_blocks = array_merge($report_blocks, $report_lines($unit_interpretation));
+}
+$report_blocks[] = array('heading' => 'Performance per term');
+if ($record_count === 0) {
+    $report_blocks[] = array('text' => 'No learning gap records have been submitted for Fiscal Year ' . $fy . '.');
+} else {
+    $report_blocks[] = array('table' => lg_report_performance_table($term_performance, 'Term', 'term'), 'widths' => array(16, 8, 9, 8, 9, 9, 15, 26), 'size' => 18);
+    $report_blocks = array_merge($report_blocks, $report_lines($term_interpretation));
+}
+foreach ($group_sections as $section) {
+    if (empty($section['rows'])) continue;
+    $report_blocks[] = array('heading' => $section['title']);
+    $report_blocks[] = array('table' => lg_report_performance_table($section['rows'], $section['label']), 'widths' => array(22, 8, 9, 8, 9, 9, 13, 22), 'size' => 18);
+}
+if (!empty($priority_records)) {
+    $priority_table = array(array('Least learned competency', 'Learning area', 'Grade', 'Term', 'Assessed', 'With gap', 'Gap rate (%)', 'Intervention'));
+    foreach ($priority_records as $record) {
+        $priority_table[] = array(
+            trim((string) $record->least_learned_competency),
+            $record->learning_area,
+            $record->grade_level,
+            $record->term,
+            (int) $record->learners_assessed,
+            (int) $record->learners_with_gap,
+            round(((int) $record->learners_with_gap / (int) $record->learners_assessed) * 100, 1),
+            (string) $record->intervention_status !== '' ? $record->intervention_status : null,
+        );
+    }
+    $report_blocks[] = array('heading' => 'Competencies needing the most support');
+    $report_blocks[] = array('table' => $priority_table, 'widths' => array(32, 15, 9, 8, 9, 8, 8, 11), 'size' => 18);
+}
+$report_blocks[] = array('signatures' => array('Prepared by', 'Noted by'));
+$report_cell = function ($cell, $heading) {
+    if ($cell === null) return '—';
+    if (is_int($cell)) return number_format($cell);
+    if (is_float($cell)) return number_format($cell, strpos($heading, 'CPL') === 0 ? 2 : 1);
+    return $cell;
+};
 ?>
 <link rel="stylesheet" href="<?= base_url('assets/css/learning-gap-analytics.css'); ?>?v=<?= filemtime(FCPATH . 'assets/css/learning-gap-analytics.css'); ?>">
 <div class="lga">
@@ -126,7 +235,13 @@ $bars_height = function ($rows) { return max(200, count($rows) * 26 + 50); };
             <h1><?= html_escape($level_name); ?></h1>
             <p><?= html_escape($hero_text[$level]); ?></p>
         </div>
-        <a class="btn btn-light" href="<?= html_escape($records_url); ?>"><i class="mdi mdi-format-list-bulleted mr-1"></i> View Records</a>
+        <div class="lga-hero-actions">
+            <a class="btn btn-light" href="<?= html_escape($records_url); ?>"><i class="mdi mdi-format-list-bulleted mr-1"></i> View Records</a>
+            <button type="button" class="btn btn-light" id="lgaReportPrint"><i class="mdi mdi-printer mr-1" aria-hidden="true"></i> Print / Save as PDF</button>
+            <button type="button" class="btn btn-light" data-report-format="word"><i class="mdi mdi-file-word-outline mr-1" aria-hidden="true"></i> Word</button>
+            <button type="button" class="btn btn-light" data-report-format="excel"><i class="mdi mdi-file-excel-outline mr-1" aria-hidden="true"></i> Excel</button>
+            <span class="lga-report-status" id="lgaReportStatus" role="status"></span>
+        </div>
     </section>
 
     <div class="lga-kpis">
@@ -136,6 +251,27 @@ $bars_height = function ($rows) { return max(200, count($rows) * 26 + 50); };
     </div>
 
     <?php if ($level !== 'school') : ?>
+        <section class="lga-card">
+            <div class="lga-card-head"><h2>Schools by proficiency level</h2><p>Each school is placed by its CPL for Fiscal Year <?= $fy; ?>, weighted by assessed count.</p></div>
+            <div class="lga-card-body">
+                <div class="table-responsive">
+                    <table class="table lga-table mb-0">
+                        <thead><tr><th scope="col">Proficiency level</th><th scope="col">CPL range</th><th scope="col" class="num">Schools</th><th scope="col" class="num">Share</th></tr></thead>
+                        <tbody>
+                            <?php foreach ($proficiency_distribution as $row) : ?>
+                                <tr>
+                                    <th scope="row"><?= html_escape($row->label); ?></th>
+                                    <td class="text-nowrap"><?= html_escape($row->range); ?></td>
+                                    <td class="num"><strong><?= number_format((int) $row->count); ?></strong></td>
+                                    <td class="num"><?= $percent($row->share); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
         <section class="lga-card">
             <div class="lga-card-head">
                 <h2><?= $level === 'division' ? 'Districts' : 'Schools'; ?> at a glance</h2>
@@ -172,6 +308,7 @@ $bars_height = function ($rows) { return max(200, count($rows) * 26 + 50); };
                                     <th scope="col" class="num">With gap</th>
                                     <th scope="col" class="num">Gap rate</th>
                                     <th scope="col" class="num">CPL</th>
+                                    <th scope="col">Proficiency</th>
                                     <th scope="col">Mastery</th>
                                     <?php if ($level === 'district') : ?><th scope="col">Latest submission</th><?php endif; ?>
                                 </tr>
@@ -193,7 +330,8 @@ $bars_height = function ($rows) { return max(200, count($rows) * 26 + 50); };
                                         <td class="num"><?= number_format((int) $unit->learners_with_gap); ?></td>
                                         <td class="num" data-order="<?= $sort_value($unit->gap_rate); ?>"><?= $percent($unit->gap_rate); ?></td>
                                         <td class="num" data-order="<?= $sort_value($unit_cpl); ?>"><strong><?= $percent($unit_cpl, 2); ?></strong></td>
-                                        <td class="text-nowrap"><?= $unit_cpl === null ? '—' : html_escape(lg_cpl_band((float) $unit_cpl)); ?></td>
+                                        <td data-order="<?= $sort_value($unit_cpl); ?>"><?= html_escape($proficiency($unit_cpl)); ?></td>
+                                        <td><?= $unit_cpl === null ? '—' : html_escape(lg_cpl_band((float) $unit_cpl)); ?></td>
                                         <?php if ($level === 'district') : ?>
                                             <td class="text-nowrap" data-order="<?= html_escape((string) $unit->latest_submission); ?>"><?= $unit->latest_submission ? html_escape(date('M j, Y', strtotime($unit->latest_submission))) : '—'; ?></td>
                                         <?php endif; ?>
@@ -221,7 +359,7 @@ $bars_height = function ($rows) { return max(200, count($rows) * 26 + 50); };
                 <?php endif; ?>
                 <div class="table-responsive">
                     <table class="table lga-table mb-0">
-                        <thead><tr><th scope="col">Term</th><th scope="col" class="num">Records</th><th scope="col" class="num">Assessed</th><th scope="col" class="num">With gap</th><th scope="col" class="num">Gap rate</th><th scope="col" class="num">CPL</th><th scope="col">Mastery</th></tr></thead>
+                        <thead><tr><th scope="col">Term</th><th scope="col" class="num">Records</th><th scope="col" class="num">Assessed</th><th scope="col" class="num">With gap</th><th scope="col" class="num">Gap rate</th><th scope="col" class="num">CPL</th><th scope="col">Proficiency</th><th scope="col">Mastery</th></tr></thead>
                         <tbody>
                             <?php foreach ($term_performance as $row) : ?>
                                 <tr>
@@ -231,6 +369,7 @@ $bars_height = function ($rows) { return max(200, count($rows) * 26 + 50); };
                                     <td class="num"><?= number_format((int) $row->learners_with_gap); ?></td>
                                     <td class="num"><?= $percent($row->gap_rate); ?></td>
                                     <td class="num"><strong><?= $percent($row->class_proficiency_level, 2); ?></strong></td>
+                                    <td class="text-nowrap"><?= html_escape($proficiency($row->class_proficiency_level)); ?></td>
                                     <td class="text-nowrap"><?= $row->class_proficiency_level === null ? '—' : html_escape(lg_cpl_band((float) $row->class_proficiency_level)); ?></td>
                                 </tr>
                             <?php endforeach; ?>
@@ -254,7 +393,7 @@ $bars_height = function ($rows) { return max(200, count($rows) * 26 + 50); };
                 <?php endif; ?>
                 <div class="table-responsive">
                     <table class="table lga-table mb-0">
-                        <thead><tr><th scope="col"><?= html_escape($section['label']); ?></th><th scope="col" class="num">Records</th><th scope="col" class="num">Assessed</th><th scope="col" class="num">With gap</th><th scope="col" class="num">Gap rate</th><th scope="col" class="num">CPL</th><th scope="col">Mastery</th></tr></thead>
+                        <thead><tr><th scope="col"><?= html_escape($section['label']); ?></th><th scope="col" class="num">Records</th><th scope="col" class="num">Assessed</th><th scope="col" class="num">With gap</th><th scope="col" class="num">Gap rate</th><th scope="col" class="num">CPL</th><th scope="col">Proficiency</th><th scope="col">Mastery</th></tr></thead>
                         <tbody>
                             <?php foreach ($section['rows'] as $row) : ?>
                                 <tr>
@@ -264,6 +403,7 @@ $bars_height = function ($rows) { return max(200, count($rows) * 26 + 50); };
                                     <td class="num"><?= number_format((int) $row->learners_with_gap); ?></td>
                                     <td class="num"><?= $percent($row->gap_rate); ?></td>
                                     <td class="num"><strong><?= $percent($row->class_proficiency_level, 2); ?></strong></td>
+                                    <td class="text-nowrap"><?= html_escape($proficiency($row->class_proficiency_level)); ?></td>
                                     <td class="text-nowrap"><?= $row->class_proficiency_level === null ? '—' : html_escape(lg_cpl_band((float) $row->class_proficiency_level)); ?></td>
                                 </tr>
                             <?php endforeach; ?>
@@ -301,6 +441,42 @@ $bars_height = function ($rows) { return max(200, count($rows) * 26 + 50); };
         </section>
     <?php endif; ?>
 </div>
+
+<article class="lga-doc">
+    <?php foreach ($report_blocks as $block) : ?>
+        <?php if (isset($block['letterhead'])) : ?>
+            <header class="lga-doc-letterhead">
+                <img src="<?= html_escape($block['logo']); ?>" alt="">
+                <?php foreach ($block['letterhead'] as $line) : ?><p><?= html_escape($line); ?></p><?php endforeach; ?>
+            </header>
+        <?php elseif (isset($block['title'])) : ?>
+            <h1><?= html_escape($block['title']); ?></h1>
+        <?php elseif (isset($block['heading'])) : ?>
+            <h2><?= html_escape($block['heading']); ?></h2>
+        <?php elseif (isset($block['table'])) : $width_total = array_sum($block['widths']); ?>
+            <table>
+                <colgroup><?php foreach ($block['widths'] as $width) : ?><col style="width:<?= round($width / $width_total * 100, 2); ?>%"><?php endforeach; ?></colgroup>
+                <thead><tr><?php foreach ($block['table'][0] as $heading) : ?><th scope="col"><?= html_escape($heading); ?></th><?php endforeach; ?></tr></thead>
+                <tbody>
+                    <?php foreach (array_slice($block['table'], 1) as $row) : ?>
+                        <tr><?php foreach ($row as $index => $cell) : ?><td<?= is_int($cell) || is_float($cell) || ($cell === null && strpos($block['table'][0][$index], '(%)') !== false) ? ' class="num"' : ''; ?>><?= html_escape($report_cell($cell, $block['table'][0][$index])); ?></td><?php endforeach; ?></tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php elseif (isset($block['signatures'])) : ?>
+            <div class="lga-doc-signatures">
+                <?php foreach ($block['signatures'] as $label) : ?>
+                    <div><p><strong><?= html_escape($label); ?>:</strong></p><span></span><small>Signature over printed name</small></div>
+                <?php endforeach; ?>
+            </div>
+        <?php elseif (isset($block['label'])) : ?>
+            <p class="lga-doc-meta"><strong><?= html_escape($block['label']); ?>:</strong> <?= html_escape($block['text']); ?></p>
+        <?php else : ?>
+            <p><?= html_escape($block['text']); ?></p>
+        <?php endif; ?>
+    <?php endforeach; ?>
+</article>
+<script src="<?= base_url('assets/js/chart-exports.js'); ?>?v=<?= filemtime(FCPATH . 'assets/js/chart-exports.js'); ?>"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var unitCount = <?= count($units); ?>;
@@ -315,6 +491,33 @@ document.addEventListener('DOMContentLoaded', function () {
             language: { search: '_INPUT_', searchPlaceholder: 'Search <?= $level === 'division' ? 'districts' : 'schools'; ?>...' }
         });
     }
+
+    var reportName = <?= json_encode($report_name, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    var reportBlocks = <?= json_encode($report_blocks, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE); ?>;
+    var reportStatus = document.getElementById('lgaReportStatus');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-report-format]'), function (button) {
+        button.addEventListener('click', async function () {
+            var download = button.getAttribute('data-report-format') === 'word' ? downloadWordReport : downloadExcelReport;
+            button.disabled = true;
+            reportStatus.textContent = 'Preparing report…';
+            try {
+                await download(reportName, reportBlocks);
+                reportStatus.textContent = 'Report ready.';
+            } catch (error) {
+                reportStatus.textContent = 'Report failed. Please reload and try again.';
+                console.error(error);
+            } finally {
+                button.disabled = false;
+            }
+        });
+    });
+
+    // The browser offers the page title as the PDF file name.
+    var pageTitle = document.title;
+    window.addEventListener('beforeprint', function () { document.title = reportName; });
+    window.addEventListener('afterprint', function () { document.title = pageTitle; });
+    document.getElementById('lgaReportPrint').addEventListener('click', function () { window.print(); });
+
     if (typeof Chart === 'undefined') return;
 
     // Same colors as the dashboards, so each measure keeps its color across pages.
