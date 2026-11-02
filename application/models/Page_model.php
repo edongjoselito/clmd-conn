@@ -2176,6 +2176,10 @@ private function apply_learning_gap_scope($scope, $alias = 'lgr')
             show_error('Your account has no assigned district.', 403);
             return;
         }
+        // One school is narrower, so it stays, and the district rules below still apply.
+        if ($scope['type'] === 'school') {
+            $this->db->where(($alias === '' ? '' : $alias . '.') . 'school_id', $scope['id']);
+        }
         $scope = array('type' => 'district', 'id' => $district_id);
     }
     $prefix = $alias === '' ? '' : $alias . '.';
@@ -2220,6 +2224,37 @@ public function learning_gap_records($scope, $year = null)
     $this->apply_learning_gap_scope($scope);
 
     return $this->db->order_by('lgr.created_at', 'DESC')->get()->result();
+}
+
+/** Districts inside a division or district scope, whether or not they have records. */
+public function learning_gap_scope_districts($scope)
+{
+    if ($scope['type'] === 'division') {
+        $this->db->where('district.division_id', (int) $scope['id']);
+    } elseif ($scope['type'] === 'district') {
+        $this->db->where('district.id', (int) $scope['id']);
+    } else {
+        return array();
+    }
+    return $this->db->select('district.id, district.division_id, district.description')
+        ->from('district')
+        ->order_by('district.description', 'ASC')
+        ->get()->result();
+}
+
+/** Schools inside the viewer's reporting scope, including those with no submissions yet. */
+public function learning_gap_scope_schools($scope)
+{
+    if ($scope['type'] === 'division') {
+        $this->db->where('division_id', (int) $scope['id']);
+    } elseif ($scope['type'] === 'district') {
+        $this->db->where('district_id', (int) $scope['id']);
+    } else {
+        return array();
+    }
+    return $this->db->select('schoolID, schoolName, district_id')
+        ->order_by('schoolName', 'ASC')
+        ->get('schools')->result();
 }
 
 public function learning_gap_archive_years($scope)

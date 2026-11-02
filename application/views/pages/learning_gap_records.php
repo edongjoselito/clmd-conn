@@ -119,6 +119,7 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
                     <span class="rec-active-label">Active filters</span>
                     <?php if ($division_filter > 0) : ?><span class="rec-active-chip">Division: <?= html_escape($division_options[$division_filter] ?? (string) $division_filter); ?></span><?php endif; ?>
                     <?php if ($district_filter > 0): ?><span class="rec-active-chip">District: <?= html_escape($district_options[$district_filter] ?? (string) $district_filter); ?></span><?php endif; ?>
+                    <?php if ($school_filter !== ''): ?><span class="rec-active-chip">School ID: <?= html_escape($school_filter); ?></span><?php endif; ?>
                     <?php if ($proficiency_filter !== ''): ?><span class="rec-active-chip">Proficiency: <?= html_escape($proficiency_filter); ?></span><?php endif; ?>
                     <?php foreach ($filters as $filter) : ?>
                         <?php if ($filter['value'] !== '') : ?>

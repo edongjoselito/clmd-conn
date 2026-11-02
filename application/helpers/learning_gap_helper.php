@@ -180,3 +180,261 @@ if (!function_exists('lg_ranking_interpretation')) {
         return $lines;
     }
 }
+
+/**
+ * Building blocks for the analytics drill-down. CPL is weighted by assessed
+ * learners, the same rule as Page_model::learning_gap_term_performance().
+ */
+if (!function_exists('lg_unique_records')) {
+    /** A duplicate school profile multiplies joined rows, so each record is kept once. */
+    function lg_unique_records(array $records)
+    {
+        $unique = array();
+        foreach ($records as $record) {
+            $unique[(string) $record->id] = $record;
+        }
+        return array_values($unique);
+    }
+}
+
+if (!function_exists('lg_rollup_row')) {
+    function lg_rollup_row(array $fields = array())
+    {
+        return $fields + array(
+            'record_count' => 0,
+            'learners_assessed' => 0,
+            'learners_with_gap' => 0,
+            'cpl_weighted' => 0.0,
+            'cpl_learners' => 0,
+            'cpl_record_count' => 0,
+        );
+    }
+}
+
+if (!function_exists('lg_rollup_add')) {
+    function lg_rollup_add(array &$row, $record)
+    {
+        $assessed = (int) $record->learners_assessed;
+        $row['record_count']++;
+        $row['learners_assessed'] += $assessed;
+        $row['learners_with_gap'] += (int) $record->learners_with_gap;
+        if (isset($record->class_proficiency_level) && $record->class_proficiency_level !== '') {
+            $weight = max(1, $assessed);
+            $row['cpl_weighted'] += (float) $record->class_proficiency_level * $weight;
+            $row['cpl_learners'] += $weight;
+            $row['cpl_record_count']++;
+        }
+    }
+}
+
+if (!function_exists('lg_rollup_finish')) {
+    function lg_rollup_finish(array $row)
+    {
+        $row['gap_rate'] = $row['learners_assessed'] > 0
+            ? ($row['learners_with_gap'] / $row['learners_assessed']) * 100
+            : null;
+        $row['class_proficiency_level'] = $row['cpl_learners'] > 0
+            ? round($row['cpl_weighted'] / $row['cpl_learners'], 2)
+            : null;
+        unset($row['cpl_weighted'], $row['cpl_learners']);
+        return (object) $row;
+    }
+}
+
+if (!function_exists('lg_scope_rollup')) {
+    /**
+     * Rolls records up per school and per district. Schools with no submissions
+     * stay listed so coverage is visible. Schools outside the listed districts
+     * collect under 'unassigned', which keeps the district rows adding up to the
+     * totals. The totals count real districts only, not that bucket.
+     */
+    function lg_scope_rollup(array $districts, array $schools, array $records)
+    {
+        $district_rows = array();
+        foreach ($districts as $district) {
+            $district_rows[(string) $district->id] = lg_rollup_row(array(
+                'key' => (string) $district->id,
+                'name' => (string) $district->description,
+                'school_total' => 0,
+                'schools_reporting' => 0,
+            ));
+        }
+
+        $school_rows = array();
+        $add_school = function ($id, $name, $district_key, $missing_profile) use (&$school_rows, &$district_rows) {
+            if (isset($school_rows[$id])) return;
+            if (!isset($district_rows[$district_key])) {
+                $district_key = 'unassigned';
+                if (!isset($district_rows[$district_key])) {
+                    $district_rows[$district_key] = lg_rollup_row(array(
+                        'key' => $district_key,
+                        'name' => 'Unassigned district',
+                        'school_total' => 0,
+                        'schools_reporting' => 0,
+                    ));
+                }
+            }
+            $school_rows[$id] = lg_rollup_row(array(
+                'key' => $id,
+                'name' => $name !== '' ? $name : 'School ID ' . $id,
+                'district_key' => $district_key,
+                'district_name' => $district_rows[$district_key]['name'],
+                'missing_profile' => $missing_profile,
+                'latest_submission' => null,
+            ));
+            $district_rows[$district_key]['school_total']++;
+        };
+
+        foreach ($schools as $school) {
+            $add_school((string) $school->schoolID, trim((string) $school->schoolName), (string) $school->district_id, false);
+        }
+
+        $totals = lg_rollup_row();
+        foreach ($records as $record) {
+            $id = (string) $record->school_id;
+            // Imported submissions stay visible even when the school profile is missing.
+            $add_school($id, trim((string) $record->schoolName), !empty($record->district_name) ? (string) $record->district_id : 'unassigned', true);
+            lg_rollup_add($school_rows[$id], $record);
+            lg_rollup_add($district_rows[$school_rows[$id]['district_key']], $record);
+            lg_rollup_add($totals, $record);
+            if ($record->created_at > $school_rows[$id]['latest_submission']) {
+                $school_rows[$id]['latest_submission'] = $record->created_at;
+            }
+        }
+
+        foreach ($school_rows as $row) {
+            if ($row['record_count'] > 0) {
+                $district_rows[$row['district_key']]['schools_reporting']++;
+            }
+        }
+
+        $totals['school_total'] = count($school_rows);
+        $totals['schools_reporting'] = array_sum(array_column($district_rows, 'schools_reporting'));
+        $named_districts = array_diff_key($district_rows, array('unassigned' => true));
+        $totals['district_total'] = count($named_districts);
+        $totals['districts_reporting'] = count(array_filter($named_districts, function ($row) {
+            return $row['record_count'] > 0;
+        }));
+
+        $by_name = function ($a, $b) {
+            // Keep 'Unassigned district' last.
+            if ($a->key === 'unassigned' xor $b->key === 'unassigned') {
+                return $a->key === 'unassigned' ? 1 : -1;
+            }
+            return strnatcasecmp($a->name, $b->name);
+        };
+        $district_rows = array_map('lg_rollup_finish', $district_rows);
+        $school_rows = array_map('lg_rollup_finish', $school_rows);
+        uasort($district_rows, $by_name);
+        uasort($school_rows, $by_name);
+
+        return array('districts' => $district_rows, 'schools' => $school_rows, 'totals' => lg_rollup_finish($totals));
+    }
+}
+
+if (!function_exists('lg_term_rollup')) {
+    /** Per-term rows in the shape lg_term_interpretation() reads. */
+    function lg_term_rollup(array $records)
+    {
+        $rows = array();
+        foreach (array('Term 1', 'Term 2', 'Term 3') as $term) {
+            $rows[$term] = lg_rollup_row(array('term' => $term));
+        }
+        foreach ($records as $record) {
+            $term = (string) $record->term;
+            if (isset($rows[$term])) {
+                lg_rollup_add($rows[$term], $record);
+            }
+        }
+        return array_values(array_map('lg_rollup_finish', $rows));
+    }
+}
+
+if (!function_exists('lg_group_rollup')) {
+    /** Rolls records up by one field, such as grade_level or learning_area. */
+    function lg_group_rollup(array $records, $field)
+    {
+        $rows = array();
+        foreach ($records as $record) {
+            $name = trim((string) $record->$field);
+            if ($name === '') continue;
+            if (!isset($rows[$name])) {
+                $rows[$name] = lg_rollup_row(array('name' => $name));
+            }
+            lg_rollup_add($rows[$name], $record);
+        }
+        uksort($rows, function ($a, $b) {
+            // Kindergarten comes before Grade 1.
+            if ($a === 'Kindergarten' xor $b === 'Kindergarten') {
+                return $a === 'Kindergarten' ? -1 : 1;
+            }
+            return strnatcasecmp($a, $b);
+        });
+        return array_values(array_map('lg_rollup_finish', $rows));
+    }
+}
+
+if (!function_exists('lg_priority_records')) {
+    /** A school's records with the highest recorded gap rate come first. */
+    function lg_priority_records(array $records, $limit = 10)
+    {
+        $records = array_values(array_filter($records, function ($record) {
+            return (int) $record->learners_assessed > 0;
+        }));
+        $rate = function ($record) { return (int) $record->learners_with_gap / (int) $record->learners_assessed; };
+        usort($records, function ($a, $b) use ($rate) {
+            return $rate($b) <=> $rate($a) ?: (int) $b->learners_with_gap <=> (int) $a->learners_with_gap;
+        });
+        return array_slice($records, 0, $limit);
+    }
+}
+
+if (!function_exists('lg_term_coverage_caution')) {
+    /** Warns when one term has far fewer records than another, which makes their comparison unreliable. */
+    function lg_term_coverage_caution(array $term_performance)
+    {
+        $terms = array_values(array_filter($term_performance, function ($row) { return (int) $row->record_count > 0; }));
+        if (count($terms) < 2) return array();
+        usort($terms, function ($a, $b) { return (int) $a->record_count <=> (int) $b->record_count; });
+        $fewest = $terms[0];
+        $most = $terms[count($terms) - 1];
+        if ((int) $fewest->record_count * 4 >= (int) $most->record_count) return array();
+        return array(html_escape($fewest->term) . ' has only ' . lg_count_label((int) $fewest->record_count, 'record') . ' against ' . number_format((int) $most->record_count) . ' in ' . html_escape($most->term) . ', so treat the term-to-term change as provisional until more schools encode that term.');
+    }
+}
+
+if (!function_exists('lg_analytics_interpretation')) {
+    /** Reads district or school rows from lg_scope_rollup(); $noun names what is compared. */
+    function lg_analytics_interpretation(array $rows, $noun)
+    {
+        $lines = array();
+        if (empty($rows)) return $lines;
+
+        $silent = array_values(array_filter($rows, function ($row) { return (int) $row->record_count === 0; }));
+        $reporting = count($rows) - count($silent);
+        $line = number_format($reporting) . ' of ' . lg_count_label(count($rows), $noun) . ($reporting === 1 ? ' has' : ' have') . ' submitted records.';
+        if (!empty($silent)) {
+            $names = array_map(function ($row) { return html_escape($row->name); }, array_slice($silent, 0, 3));
+            $line .= ' No submissions yet from ' . implode(', ', $names) . (count($silent) > 3 ? ' and ' . number_format(count($silent) - 3) . ' more' : '') . '.';
+        }
+        $lines[] = $line;
+
+        $assessed = array_values(array_filter($rows, function ($row) { return $row->gap_rate !== null; }));
+        if (count($assessed) >= 2) {
+            usort($assessed, function ($a, $b) { return $b->gap_rate <=> $a->gap_rate; });
+            $high = $assessed[0];
+            $low = $assessed[count($assessed) - 1];
+            if (number_format($high->gap_rate, 1) !== number_format($low->gap_rate, 1)) {
+                $lines[] = '<strong>' . html_escape($high->name) . '</strong> has the highest recorded gap rate at <strong>' . number_format($high->gap_rate, 1) . '%</strong>, while <strong>' . html_escape($low->name) . '</strong> has the lowest at <strong>' . number_format($low->gap_rate, 1) . '%</strong>. Prioritize technical assistance where the rates are highest.';
+            }
+        }
+
+        $with_cpl = array_values(array_filter($rows, function ($row) { return $row->class_proficiency_level !== null; }));
+        if (count($with_cpl) >= 2) {
+            usort($with_cpl, function ($a, $b) { return $a->class_proficiency_level <=> $b->class_proficiency_level; });
+            $lowest = $with_cpl[0];
+            $lines[] = '<strong>' . html_escape($lowest->name) . '</strong> has the lowest CPL at <strong>' . number_format((float) $lowest->class_proficiency_level, 1) . '%</strong>, which falls under <strong>' . lg_cpl_band((float) $lowest->class_proficiency_level) . '</strong>.';
+        }
+        return $lines;
+    }
+}

@@ -60,6 +60,7 @@ class Pages extends CI_Controller
             'regional_crla_report' => array('region', 'division', 'division_head', 'ict', 'la_filipino', 'la_english'),
             'regional_phil_iri_report' => array('region', 'division', 'division_head', 'ict', 'la_filipino', 'la_english'),
             'learning_gap_archives' => array('school', 'division', 'division_head', 'region', 'district'),
+            'learning_gap_analytics' => array('division', 'division_head', 'district'),
             'profilelist' => array('admin'),
             'profile_new' => array('admin'),
             'qr' => array('admin'),
@@ -1653,6 +1654,105 @@ class Pages extends CI_Controller
         $this->load->view('templates/footer_basic');
     }
 
+    /**
+     * Analytics drill-down: division > district > school for division accounts,
+     * district > school for district accounts. Each level is cut from a rollup of
+     * the account's own scope, so anything outside that scope is simply not found.
+     * Every learning area is counted, including AP records saved through ap-lead.
+     */
+    public function learning_gap_analytics()
+    {
+        $is_district_account = strtolower(trim((string) $this->session->position)) === 'district';
+        if ($is_district_account) {
+            $scope = $this->district_learning_gap_scope();
+        } else {
+            $scope = array('type' => 'division', 'id' => (int) $this->session->division);
+            if ($scope['id'] <= 0) {
+                show_error('Your account has no assigned division.', 403);
+                return;
+            }
+        }
+
+        $this->load->helper('learning_gap');
+        $records = lg_unique_records($this->Page_model->learning_gap_records($scope));
+        $rollup = lg_scope_rollup(
+            $this->Page_model->learning_gap_scope_districts($scope),
+            $this->Page_model->learning_gap_scope_schools($scope),
+            $records
+        );
+
+        $school_id = trim((string) $this->input->get('school_id', true));
+        $district_key = $is_district_account
+            ? (string) $scope['id']
+            : trim((string) $this->input->get('district_id', true));
+        $school = null;
+        if ($school_id !== '') {
+            if (!isset($rollup['schools'][$school_id])) {
+                show_404();
+            }
+            $school = $rollup['schools'][$school_id];
+            $district_key = $school->district_key;
+        }
+        $district = null;
+        if ($district_key !== '') {
+            if (!isset($rollup['districts'][$district_key])) {
+                show_404();
+            }
+            $district = $rollup['districts'][$district_key];
+        }
+
+        if ($school) {
+            $level = 'school';
+            $metrics = $school;
+            $units = array();
+            $keep = array($school->key => true);
+        } elseif ($district) {
+            $level = 'district';
+            $metrics = $district;
+            $units = array_values(array_filter($rollup['schools'], function ($row) use ($district) {
+                return $row->district_key === $district->key;
+            }));
+            $keep = array();
+            foreach ($units as $unit) {
+                $keep[$unit->key] = true;
+            }
+        } else {
+            $level = 'division';
+            $metrics = $rollup['totals'];
+            $units = array_values($rollup['districts']);
+            $keep = null;
+        }
+        $level_records = $keep === null ? $records : array_values(array_filter($records, function ($record) use ($keep) {
+            return isset($keep[(string) $record->school_id]);
+        }));
+
+        $data = array(
+            'title' => 'Learning Gap Analytics',
+            'level' => $level,
+            'is_district_account' => $is_district_account,
+            'division' => $this->Page_model->one_cond_row('division', 'id', (int) $this->session->division),
+            'district' => $district,
+            'school' => $school,
+            'metrics' => $metrics,
+            'units' => $units,
+            'term_performance' => lg_term_rollup($level_records),
+            'area_performance' => lg_group_rollup($level_records, 'learning_area'),
+            'grade_performance' => lg_group_rollup($level_records, 'grade_level'),
+            'priority_records' => $school ? lg_priority_records($level_records) : array(),
+        );
+        $named_units = array_values(array_filter($units, function ($unit) { return $unit->key !== 'unassigned'; }));
+        $data['unit_interpretation'] = lg_analytics_interpretation($named_units, $level === 'division' ? 'district' : 'school');
+        $data['term_interpretation'] = array_merge(
+            lg_term_interpretation($data['term_performance'], (int) $metrics->record_count),
+            lg_term_coverage_caution($data['term_performance'])
+        );
+
+        $this->load->view('templates/header_dt');
+        $this->load->view('templates/menu');
+        $this->load->view('pages/learning_gap_analytics', $data);
+        $this->load->view('templates/footer_dt');
+    }
+
     /** Display submitted learning-gap records separately from the summary page. */
     public function learning_gap_archives()
     {
@@ -1715,6 +1815,7 @@ class Pages extends CI_Controller
         $data['grade_filter'] = trim((string) $this->input->get('grade_level', true));
         $data['division_filter'] = max(0, (int) $this->input->get('division_id', true));
         $data['district_filter'] = max(0, (int) $this->input->get('district_id', true));
+        $data['school_filter'] = $data['is_school'] ? '' : trim((string) $this->input->get('school_id', true));
         $data['proficiency_filter'] = trim((string) $this->input->get('proficiency_level', true));
         $this->load->helper('learning_gap');
         $data['proficiency_options'] = array_column(lg_proficiency_levels(), 'label');
@@ -1726,6 +1827,7 @@ class Pages extends CI_Controller
         $data['competency_filter'] = trim((string) $this->input->get('competency', true));
         $data['has_record_filters'] = $data['division_filter'] > 0
             || $data['district_filter'] > 0
+            || $data['school_filter'] !== ''
             || $data['proficiency_filter'] !== ''
             || $data['grade_filter'] !== ''
             || $data['learning_area_filter'] !== ''
@@ -1766,6 +1868,11 @@ class Pages extends CI_Controller
         if ($data['division_filter'] > 0) {
             $data['records'] = array_values(array_filter($data['records'], function ($record) use ($data) {
                 return (int) $record->division_id === $data['division_filter'];
+            }));
+        }
+        if ($data['school_filter'] !== '') {
+            $data['records'] = array_values(array_filter($data['records'], function ($record) use ($data) {
+                return (string) $record->school_id === $data['school_filter'];
             }));
         }
         if ($data['grade_filter'] !== '') {

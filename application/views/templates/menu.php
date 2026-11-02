@@ -263,6 +263,7 @@ if ($this->session->position === 'school') {
                         <?php endif; ?>
                         <?php if ($this->session->position == 'district') { ?>
                             <li><a href="<?= base_url(); ?>pages/schools_district/<?= $this->session->district; ?>" class="waves-effect"><i class="fas fa-school"></i><span>Schools</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/learning_gap_analytics" class="waves-effect"><i class="mdi mdi-chart-timeline-variant"></i><span> Analytics</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap" class="waves-effect"><i class="fas fa-chart-bar"></i><span> Learning Gap Overview</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="fas fa-school"></i><span> Learning Gap Summary</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_records" class="waves-effect"><i class="fas fa-list"></i><span> Submitted Learning Gap</span></a></li>
@@ -284,6 +285,7 @@ if ($this->session->position === 'school') {
 
                         <?php if ($this->session->position == 'division') { ?>
                             <!-- <li><a href="<?= base_url(); ?>pages/schools_division/<?= $this->session->division; ?>" class="waves-effect"><i class="fas fa-school"></i><span>Schools</span></a></li> -->
+                            <li><a href="<?= base_url(); ?>Pages/learning_gap_analytics" class="waves-effect"><i class="mdi mdi-chart-timeline-variant"></i><span> Analytics</span></a></li>
                             <li>
                                 <a href="<?= base_url(); ?>Pages/learning_gap" class="waves-effect"><i class="fas fa-chart-bar"></i><span> Learning Gap Overview</span></a>
                             </li>
@@ -313,6 +315,7 @@ if ($this->session->position === 'school') {
                         <?php if ($this->session->position == 'division_head') { ?>
                             <!-- <li><a href="<?= base_url(); ?>pages/schools_division/<?= $this->session->division; ?>" class="waves-effect"><i class="fas fa-school"></i><span>Schools</span></a></li> -->
                             
+                            <li><a href="<?= base_url(); ?>Pages/learning_gap_analytics" class="waves-effect"><i class="mdi mdi-chart-timeline-variant"></i><span> Analytics</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap" class="waves-effect"><i class="fas fa-chart-bar"></i><span> Learning Gap Overview</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="fas fa-school"></i><span> Learning Gap Summary</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_records" class="waves-effect"><i class="fas fa-list"></i><span> Submitted Learning Gap</span></a></li>

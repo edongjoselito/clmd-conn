@@ -65,6 +65,7 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
         <span class="lgm-eyebrow"><i class="mdi mdi-chart-donut-variant"></i><?= html_escape($scope_label); ?></span>
         <h1><i class="mdi mdi-chart-box mr-2"></i>Learning Gap Monitoring</h1>
         <p><?= html_escape($scope_label); ?> · Fiscal Year <?= (int) $this->session->fy; ?> · Track least learned competencies, learner gaps, and interventions.</p>
+        <?php if (in_array($scope['type'], array('division', 'district'), true)): ?><a class="btn btn-light btn-sm mt-3" style="position:relative;z-index:1" href="<?= base_url('Pages/learning_gap_analytics'); ?>"><i class="mdi mdi-chart-timeline-variant mr-1"></i> <?= $scope['type'] === 'division' ? 'District &amp; School Analytics' : 'School Analytics'; ?></a><?php endif; ?>
     </div>
 
     <?php if ($this->session->flashdata('success')): ?><div class="alert alert-success"><?= $this->session->flashdata('success'); ?></div><?php endif; ?>
